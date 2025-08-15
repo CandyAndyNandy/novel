@@ -13,19 +13,36 @@
     }
     .top {
       background-color: #ff0000; /* 빨간색 */
-      height: 50vh; /* 화면 절반 */
+      height: 50vh;
       position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 30px; /* 글자 크기 변경 */
-      color: white; /* 글자 색 */
+      font-size: 30px;
+      color: white;
       font-family: sans-serif;
       font-weight: bold;
     }
     .bottom {
       background-color: #ffcc00; /* 노란색 */
-      height: 50vh; /* 화면 절반 */
+      height: 50vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: sans-serif;
+      gap: 10px;
+    }
+    .label {
+      font-size: 20px;
+      font-weight: bold;
+      color: black;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
     /* 물결 모양 */
     .wave {
@@ -51,6 +68,11 @@
       </svg>
     </div>
   </div>
-  <div class="bottom"></div>
+  <div class="bottom">
+    <div class="label">Nick name</div>
+    <input type="text" placeholder="닉네임 입력" />
+    <div class="label">Password</div>
+    <input type="password" placeholder="비밀번호 입력" />
+  </div>
 </body>
 </html>
