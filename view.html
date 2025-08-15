@@ -11,7 +11,22 @@
       display:flex; justify-content:space-between; align-items:center;
     }
     main {
-      padding:20px; font-size:16px; white-space:pre-wrap;
+      padding:20px;
+    }
+    .title-box {
+      border:2px solid #333;
+      padding:10px;
+      margin-bottom:10px;
+      font-weight:bold;
+      font-size:18px;
+      background:white;
+    }
+    .content-box {
+      border:1px solid #555;
+      padding:10px;
+      white-space:pre-wrap;
+      background:white;
+      min-height:200px;
     }
     button {
       background:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;
@@ -26,8 +41,21 @@
     <button onclick="location.href='success.html'">돌아가기</button>
   </header>
   <main>
-    작성된 소설이 여기에 표시됩니다.  
-    (여기는 나중에 실제 저장 기능과 연결 가능)
+    <div id="titleBox" class="title-box">제목 없음</div>
+    <div id="contentBox" class="content-box">내용 없음</div>
   </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const title = localStorage.getItem('novelTitle') || '제목 없음';
+        const content = localStorage.getItem('novelContent') || '내용 없음';
+        document.getElementById('titleBox').textContent = title;
+        document.getElementById('contentBox').textContent = content;
+      } catch (e) {
+        alert('저장된 소설을 불러올 수 없습니다.');
+      }
+    });
+  </script>
 </body>
 </html>
