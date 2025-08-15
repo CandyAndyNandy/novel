@@ -6,70 +6,43 @@
   <title>novel</title>
   <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
-    .top {
-      background:#ff0000; /* 빨강 */
-      height:50vh;        /* 위 50% */
-      position:relative;
-      display:flex; justify-content:center; align-items:center;
-      color:#fff; font-size:30px; font-weight:700;
-    }
-    .bottom {
-      background:#ffcc00; /* 노랑 */
-      height:50vh;        /* 아래 50% */
-      display:flex; flex-direction:column; justify-content:center; align-items:center;
-      gap:10px;
-    }
+    .top { background:#ff0000; height:50vh; position:relative; display:flex; justify-content:center; align-items:center; color:#fff; font-size:30px; font-weight:700; }
+    .bottom { background:#ffcc00; height:50vh; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; }
     .label { font-size:20px; font-weight:700; }
-    input {
-      padding:8px 10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:240px; outline:none;
-    }
-    .btn {
-      display:inline-block; padding:10px 16px; border-radius:8px;
-      border:1px solid #333; background:#fff; font-weight:700; cursor:pointer; text-decoration:none; color:#111;
-    }
+    input { padding:8px 10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:240px; outline:none; }
+    .btn { display:inline-block; padding:10px 16px; border-radius:8px; border:1px solid #333; background:#fff; font-weight:700; cursor:pointer; text-decoration:none; color:#111; }
     .btn + .btn { margin-left:6px; }
     .wave { position:absolute; bottom:-1px; left:0; width:100%; height:100px; }
     svg { display:block; width:100%; height:100%; }
-    .hint { font-size:12px; color:#333; opacity:.8; margin-top:4px; }
   </style>
 </head>
 <body>
-  <!-- 위: 빨강 -->
   <div class="top">
     NOVEL
-    <div class="wave">
-      <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
-        <path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path>
-      </svg>
-    </div>
+    <div class="wave"><svg viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path></svg></div>
   </div>
 
-  <!-- 아래: 노랑 -->
   <div class="bottom">
     <div class="label">Nick name</div>
     <input type="text" id="nickname" placeholder="닉네임 입력" />
-
     <div class="label">Password</div>
     <input type="password" id="password" placeholder="비밀번호 입력" />
 
-    <!-- 로그인은 '가입 완료된 사용자'만 가능 -->
     <div style="margin-top:8px;">
-      <a id="loginBtn" class="btn" href="login.html" style="display:none;">로그인</a>
       <a class="btn" href="signup.html">가입하기</a>
+      <a id="loginBtn" class="btn" href="login.html">로그인</a>
     </div>
-    <div class="hint">가입은 signup 페이지에서 진행됩니다.</div>
   </div>
 
-  <!-- Firebase SDK (compat 버전: 빌드 도구 없이 사용) -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <!-- Firebase 초기화 (Andy님 프로젝트 값으로 채움) -->
   <script>
-    // ★ 여기에 반드시 본인 콘솔에 나온 '정확한 값'을 넣어야 합니다.
+    // ★ 콘솔의 값을 정확히 넣기 (apiKey는 'AIza...'로 시작)
     const firebaseConfig = {
-      apiKey: "AlzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwIE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
       projectId: "novel-app-33aa7",
       storageBucket: "novel-app-33aa7.appspot.com",
@@ -77,24 +50,8 @@
       appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
       measurementId: "G-BXT8Y97XW2"
     };
-
-    // 초기화
-    try {
-      firebase.initializeApp(firebaseConfig);
-    } catch (e) {
-      // 이미 초기화되어 있을 때의 오류 방지
-      if (!/already exists/i.test(e.message)) {
-        alert('Firebase 초기화 오류: ' + e.message);
-      }
-    }
-
-    const auth = firebase.auth();
-
-    // 로그인 상태면 '로그인' 버튼 보이기
-    auth.onAuthStateChanged((user) => {
-      const btn = document.getElementById('loginBtn');
-      if (user) btn.style.display = 'inline-block';
-    });
+    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+    // 여기서는 단순 진입 페이지라 추가 로직 불필요
   </script>
 </body>
 </html>
