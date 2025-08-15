@@ -7,55 +7,159 @@
   <style>
     html, body { margin:0; padding:0; height:100%; font-family:sans-serif; background:#ffcc00; }
     header {
-      background:#ff0000; color:white; padding:10px 20px; font-size:20px; font-weight:bold;
+      background:#ff0000; color:white; padding:10px 16px; font-size:20px; font-weight:bold;
       display:flex; justify-content:space-between; align-items:center;
     }
-    main {
-      padding:20px;
-    }
-    .title-box {
-      border:2px solid #333;
-      padding:10px;
-      margin-bottom:10px;
-      font-weight:bold;
-      font-size:18px;
-      background:white;
-    }
-    .content-box {
-      border:1px solid #555;
-      padding:10px;
-      white-space:pre-wrap;
-      background:white;
-      min-height:200px;
-    }
+    .h-actions { display:flex; gap:8px; }
     button {
-      background:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;
-      font-weight:bold;
+      background:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;
     }
     button:hover { background:#f0f0f0; }
+
+    main {
+      display:grid; gap:16px; padding:16px;
+    }
+    /* 레이아웃: 좌(목록) / 우(상세) - 좁은 화면에서는 세로 배치 */
+    .layout { display:grid; gap:16px; grid-template-columns: 1fr; }
+    @media(min-width:900px){ .layout { grid-template-columns: 340px 1fr; } }
+
+    .list {
+      background:#fff; border:1px solid #ddd; border-radius:10px; padding:12px; max-height:70vh; overflow:auto;
+    }
+    .card {
+      border:1px solid #eee; border-radius:10px; padding:10px; margin-bottom:10px; cursor:pointer;
+      background:#fafafa;
+    }
+    .card:hover { background:#f3f3f3; }
+    .card-title { font-weight:700; margin-bottom:4px; }
+    .card-meta { font-size:12px; color:#555; }
+
+    .detail {
+      background:#fff; border:1px solid #ddd; border-radius:10px; padding:16px;
+    }
+    .title-box {
+      border:2px solid #333; padding:10px; margin-bottom:10px; font-weight:bold; font-size:18px; background:white;
+    }
+    .meta { font-size:12px; color:#666; margin-bottom:8px; }
+    .content-box {
+      border:1px solid #555; padding:12px; white-space:pre-wrap; background:white; min-height:240px;
+    }
+    .empty { color:#333; font-weight:bold; text-align:center; padding:40px; background:#fff; border:1px dashed #aaa; border-radius:10px; }
   </style>
 </head>
 <body>
   <header>
     <span>내 소설 보기</span>
-    <button onclick="location.href='success.html'">돌아가기</button>
+    <div class="h-actions">
+      <button onclick="location.href='success.html'">홈으로</button>
+      <button onclick="location.href='write.html'">새로 쓰기</button>
+    </div>
   </header>
+
   <main>
-    <div id="titleBox" class="title-box">제목 없음</div>
-    <div id="contentBox" class="content-box">내용 없음</div>
+    <div class="layout">
+      <aside class="list" id="list"></aside>
+
+      <section class="detail" id="detail">
+        <div id="titleBox" class="title-box">제목 없음</div>
+        <div id="metaBox" class="meta"></div>
+        <div id="contentBox" class="content-box">내용 없음</div>
+      </section>
+    </div>
+
+    <div id="emptyState" class="empty" style="display:none;">
+      저장된 소설이 없습니다. <button onclick="location.href='write.html'">지금 쓰기</button>
+    </div>
   </main>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    const listEl = document.getElementById('list');
+    const titleEl = document.getElementById('titleBox');
+    const contentEl = document.getElementById('contentBox');
+    const metaEl = document.getElementById('metaBox');
+    const detailEl = document.getElementById('detail');
+    const emptyEl = document.getElementById('emptyState');
+
+    function formatDate(iso) {
       try {
-        const title = localStorage.getItem('novelTitle') || '제목 없음';
-        const content = localStorage.getItem('novelContent') || '내용 없음';
-        document.getElementById('titleBox').textContent = title;
-        document.getElementById('contentBox').textContent = content;
-      } catch (e) {
-        alert('저장된 소설을 불러올 수 없습니다.');
+        const d = new Date(iso);
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mm = String(d.getMinutes()).padStart(2,'0');
+        return `${y}-${m}-${dd} ${hh}:${mm}`;
+      } catch { return ''; }
+    }
+
+    function renderList(novels, activeId) {
+      listEl.innerHTML = '';
+      novels
+        .slice()
+        .sort((a,b)=> b.id - a.id) // 최신 순
+        .forEach(n => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.onclick = () => showDetail(n);
+
+          const title = document.createElement('div');
+          title.className = 'card-title';
+          title.textContent = n.title;
+
+          const meta = document.createElement('div');
+          meta.className = 'card-meta';
+          meta.textContent = `${n.author || '익명'} · ${formatDate(n.createdAt)}`;
+
+          const preview = document.createElement('div');
+          preview.style.fontSize = '12px';
+          preview.style.color = '#333';
+          preview.textContent = (n.content || '').slice(0, 60) + ((n.content || '').length > 60 ? '…' : '');
+
+          card.appendChild(title);
+          card.appendChild(meta);
+          card.appendChild(preview);
+          listEl.appendChild(card);
+
+          if (activeId && n.id === activeId) {
+            showDetail(n);
+          }
+        });
+    }
+
+    function showDetail(n) {
+      titleEl.textContent = n.title || '제목 없음';
+      contentEl.textContent = n.content || '내용 없음';
+      metaEl.textContent = `${n.author || '익명'} · ${formatDate(n.createdAt)}`;
+      detailEl.style.display = '';
+    }
+
+    function init() {
+      let novels = [];
+      try {
+        novels = JSON.parse(localStorage.getItem('novels') || '[]');
+      } catch { novels = []; }
+
+      if (!novels.length) {
+        detailEl.style.display = 'none';
+        emptyEl.style.display = '';
+        return;
       }
-    });
+
+      // 쿼리로 특정 id가 오면 그걸 우선 표시
+      const params = new URLSearchParams(location.search);
+      const idParam = params.get('id');
+      const activeId = idParam ? Number(idParam) : null;
+
+      renderList(novels, activeId);
+
+      // active가 없으면 최신 것을 상세에 표시
+      if (!activeId) {
+        const latest = novels.sort((a,b)=>b.id-a.id)[0];
+        showDetail(latest);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
