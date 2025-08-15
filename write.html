@@ -4,12 +4,14 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>소설 쓰기 - novel</title>
   <style>
-    html,body{margin:0;padding:0;height:100%;font-family:sans-serif}
-    header{background:#f00;color:#fff;padding:10px 16px;font-size:20px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
-    .h-actions{display:flex;gap:8px} button{background:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:700}
-    .container{padding:16px;display:flex;flex-direction:column;gap:10px;height:calc(100% - 52px);background:#ffcc00}
-    input.title{font-size:18px;padding:10px;border:1px solid #ccc;border-radius:6px;background:#fff}
-    textarea{flex:1;font-size:16px;padding:10px;border:1px solid #ccc;border-radius:6px;resize:none;background:#fff}
+    html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
+    header { background:#ff0000; color:#fff; padding:10px 16px; font-size:20px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+    .h-actions { display:flex; gap:8px; }
+    button { background:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700; }
+    button:hover { background:#f0f0f0; }
+    .container { padding:16px; display:flex; flex-direction:column; gap:10px; height:calc(100% - 52px); background:#ffcc00; }
+    input.title { font-size:18px; padding:10px; border:1px solid #ccc; border-radius:6px; background:#fff; }
+    textarea { flex:1; font-size:16px; padding:10px; border:1px solid #ccc; border-radius:6px; resize:none; background:#fff; }
   </style>
 </head>
 <body>
@@ -26,26 +28,44 @@
     <textarea id="content" placeholder="여기에 소설 내용을 작성하세요..."></textarea>
   </div>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-init.js"></script>
   <script>
-    auth.onAuthStateChanged(u=>{ if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; } });
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwIE--6GWjPSjKw",
+      authDomain: "novel-app-33aa7.firebaseapp.com",
+      projectId: "novel-app-33aa7",
+      storageBucket: "novel-app-33aa7.appspot.com",
+      messagingSenderId: "791233454587",
+      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+      measurementId: "G-BXT8Y97XW2"
+    };
+    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    auth.onAuthStateChanged(u=>{
+      if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; }
+    });
 
     async function saveNovel(){
-      const u=auth.currentUser; if(!u){alert('로그인이 필요합니다.');return;}
-      const title=document.getElementById('title').value.trim();
-      const content=document.getElementById('content').value.trim();
-      if(!title||!content){alert('제목과 내용을 모두 입력하세요.');return;}
+      const u = auth.currentUser;
+      if(!u){ alert('로그인이 필요합니다.'); return; }
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      if(!title || !content){ alert('제목과 내용을 모두 입력하세요.'); return; }
+
       try{
-        const ref=await db.collection('users').doc(u.uid).collection('novels').add({
-          title, content, author:u.displayName||'익명',
-          createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        const ref = await db.collection('users').doc(u.uid).collection('novels').add({
+          title, content, author: u.displayName || '익명',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('저장되었습니다.'); location.href='view.html?id='+ref.id;
-      }catch(e){ alert('저장 실패: '+e.message); }
+        alert('저장되었습니다.');
+        location.href = 'view.html?id=' + ref.id;
+      }catch(e){
+        alert('저장 실패: ' + e.message);
+      }
     }
   </script>
 </body>
