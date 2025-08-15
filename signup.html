@@ -68,18 +68,15 @@
       }
 
       try {
-        // 간단한 가입 완료 표시(클라이언트 저장소)
+        // 가입 완료 플래그 저장
         localStorage.setItem('registered', 'true');
         localStorage.setItem('nickname', nick);
-        // 실제 서비스라면 비밀번호는 저장/노출하지 마세요 (여기선 데모용)
-        // localStorage.setItem('password', pass);
-
-        alert('가입 정보가 저장되었습니다. 첫 화면으로 이동합니다.');
       } catch (e) {
         console.warn('Storage not available:', e);
       }
 
-      // 1번째 화면으로 이동
+      alert('가입이 완료되었습니다! 첫 화면으로 이동합니다.');
+      // 첫 화면으로 이동
       window.location.href = 'index.html';
     }
   </script>
