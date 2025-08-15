@@ -2,22 +2,22 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>novel</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+    html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
     .top {
       background-color: #ff0000; /* 빨강 */
-      height: 50vh;
+      height: 20vh; /* 20% */
       position: relative;
       display: flex; justify-content: center; align-items: center;
       font-size: 30px; color: #fff; font-weight: bold;
     }
     .bottom {
       background-color: #ffcc00; /* 노랑 */
-      height: 50vh;
+      height: 80vh; /* 80% */
       display: flex; flex-direction: column; justify-content: center; align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
     .label { font-size: 20px; font-weight: bold; color: #000; }
     input {
@@ -25,23 +25,22 @@
       outline: none;
     }
     .btn {
+      margin-top: 8px;
       display: inline-block; padding: 10px 16px; border-radius: 8px;
       border: 1px solid #333; background: #fff; color: #111; text-decoration: none;
       font-weight: 700; font-size: 16px; cursor: pointer;
     }
     .btn:hover { background: #f6f6f6; }
-    .wave {
-      position: absolute; bottom: -1px; left: 0; width: 100%; height: 100px;
-    }
+    .wave { position: absolute; bottom: -1px; left: 0; width: 100%; height: 100px; }
     svg { display: block; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
   <div class="top">
-    NOVEL
+    LOGIN
     <div class="wave">
       <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
-        <path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path>
+        <path fill="#ffcc00" d="M0,64L80,85.3C160,107,320,149,480,165.3C640,181,800,171,960,181.3C1120,192,1280,224,1360,240L1440,256V320H0Z"></path>
       </svg>
     </div>
   </div>
@@ -53,27 +52,53 @@
     <div class="label">Password</div>
     <input type="password" id="password" placeholder="비밀번호 입력" />
 
-    <!-- 로그인 버튼: 가입 완료한 사람에게만 보이기 -->
-    <a id="loginBtn" class="btn" href="login.html" style="display:none; margin-top:6px;">로그인</a>
-
-    <!-- 가입하기 버튼: 항상 표시 -->
-    <a class="btn" href="signup.html" style="margin-top:10px;">가입하기</a>
+    <button class="btn" onclick="login()">로그인</button>
+    <a class="btn" href="index.html">← 처음 화면으로</a>
   </div>
 
   <script>
-    // 가입을 완료한 사용자(localStorage.registered === 'true')에게만 로그인 버튼 표시
+    // 가입 시 저장한 닉네임을 자동 채우기(선택)
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        const isRegistered = localStorage.getItem('registered') === 'true';
-        const loginBtn = document.getElementById('loginBtn');
-        if (isRegistered && loginBtn) {
-          loginBtn.style.display = 'inline-block';
-        }
-      } catch (e) {
-        // 브라우저가 localStorage를 막은 경우 대비
-        console.warn('Storage not available:', e);
-      }
+        const nick = localStorage.getItem('nickname') || '';
+        if (nick) document.getElementById('nickname').value = nick;
+      } catch (e) {}
     });
+
+    function login() {
+      const nick = document.getElementById('nickname').value.trim();
+      const pass = document.getElementById('password').value.trim();
+
+      // 저장된 값 불러오기
+      let storedRegistered = null, storedNick = null, storedPass = null;
+      try {
+        storedRegistered = localStorage.getItem('registered');
+        storedNick = localStorage.getItem('nickname');
+        storedPass = localStorage.getItem('password');
+      } catch (e) {
+        alert('브라우저 저장소 사용이 불가합니다. 로그인할 수 없습니다.');
+        return;
+      }
+
+      // 저장된 값이 없으면 로그인 불가
+      if (storedRegistered !== 'true' || !storedNick || !storedPass) {
+        alert('가입 정보가 없습니다. 먼저 가입을 완료해 주세요.');
+        return;
+      }
+
+      // 닉네임/비번 모두 일치해야만 로그인 성공
+      if (nick !== storedNick) {
+        alert('저장된 닉네임과 일치하지 않습니다.');
+        return;
+      }
+      if (pass !== storedPass) {
+        alert('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+
+      // 성공 → 성공 페이지로 이동
+      window.location.href = 'success.html';
+    }
   </script>
 </body>
 </html>
