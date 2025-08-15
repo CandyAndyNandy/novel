@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 소설 보기 - novel</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; font-family:sans-serif; background:#ffcc00; }
+    header {
+      background:#ff0000; color:white; padding:10px 20px; font-size:20px; font-weight:bold;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    main {
+      padding:20px; font-size:16px; white-space:pre-wrap;
+    }
+    button {
+      background:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;
+      font-weight:bold;
+    }
+    button:hover { background:#f0f0f0; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>내 소설 보기</span>
+    <button onclick="location.href='success.html'">돌아가기</button>
+  </header>
+  <main>
+    작성된 소설이 여기에 표시됩니다.  
+    (여기는 나중에 실제 저장 기능과 연결 가능)
+  </main>
+</body>
+</html>
