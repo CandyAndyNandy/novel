@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원 목록 - novel</title>
+  <style>
+    body{margin:0;font-family:sans-serif;background:#ffcc00}
+    header{background:#f00;color:#fff;padding:12px 16px;font-size:20px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+    .btn{background:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700}
+    main{padding:16px}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden}
+    th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;font-size:14px}
+    th{background:#fafafa}
+    .small{font-size:12px;color:#666}
+  </style>
+</head>
+<body>
+  <header>
+    <span>회원 목록 (Admin)</span>
+    <div>
+      <button class="btn" onclick="location.href='success.html'">홈</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="guard" class="small">관리자 권한 확인 중…</div>
+    <table id="tbl" style="display:none">
+      <thead><tr><th>닉네임</th><th>UID</th><th>생성일</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+      authDomain: "novel-app-33aa7.firebaseapp.com",
+      projectId: "novel-app-33aa7",
+      storageBucket: "novel-app-33aa7.firebasestorage.app",
+      messagingSenderId: "791233454587",
+      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+      measurementId: "G-BXT8Y97XW2"
+    };
+
+    const ADMIN_UID = "tls123"; // ★ 본인 관리자 UID로 바꾸세요
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    onAuthStateChanged(auth, async (u)=>{
+      const guard = document.getElementById('guard');
+      const tbl   = document.getElementById('tbl');
+
+      if(!u){ guard.textContent='로그인이 필요합니다.'; return; }
+      if(u.uid !== ADMIN_UID){ guard.textContent='접근 권한 없음(관리자 전용)'; return; }
+
+      guard.style.display='none'; tbl.style.display='';
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '';
+
+      const qs = await getDocs(query(collection(db,'users'), orderBy('createdAt','desc')));
+      qs.forEach(d=>{
+        const v = d.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${v.nickname || '(무명)'}</td><td>${d.id}</td><td>${v.createdAt?.toDate ? v.createdAt.toDate().toLocaleString() : '-'}</td>`;
+        rows.appendChild(tr);
+      });
+    });
+  </script>
+</body>
+</html>
