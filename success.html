@@ -1,50 +1,61 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>novel</title>
-  <style>
-    html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:sans-serif}
-    /* 빨강 영역을 약간 키우고 레이어 정리 */
-    .top{background:#f00;height:22vh;position:relative;color:#fff;font-weight:700;font-size:32px}
-    .top-content{position:relative;width:100%;height:100%;display:flex;justify-content:center;align-items:center;z-index:2}
-    .top-buttons{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:2}
-    .top-buttons .btn{background:#fff;color:#000;padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700}
-    .account{position:absolute;right:16px;top:10px;display:flex;gap:8px;z-index:2}
-    .account .btn{background:#fff;color:#000;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-weight:700}
-    .wave{position:absolute;bottom:-1px;left:0;width:100%;height:80px;z-index:1;pointer-events:none}
-    .bottom{background:#ffcc00;height:78vh;display:flex;justify-content:center;align-items:center;font-size:22px;font-weight:700;color:#333}
-    svg{display:block;width:100%;height:100%}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>성공 화면</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    background: #ffcc00;
+  }
+  header {
+    background: #f00;
+    color: #fff;
+    padding: 20px 16px; /* 상단 패딩 늘림 */
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column; /* 세로 정렬로 버튼이 아래로 내려가게 */
+    align-items: center;
+    gap: 16px; /* 제목과 버튼 사이 간격 */
+  }
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button {
+    background: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  button:hover {
+    background: #f4f4f4;
+  }
+</style>
 </head>
 <body>
-  <div class="top">
-    <div class="top-content">
-      <div class="top-buttons">
-        <button class="btn" onclick="location.href='write.html'">소설 쓰기</button>
-        <button class="btn" onclick="location.href='view.html'">내 소설 보기</button>
-        <button class="btn" onclick="location.href='tls123.html'">회원 목록(Admin)</button>
-      </div>
-      NOVEL
-      <div class="account">
-        <button class="btn" id="logoutBtn">로그아웃</button>
-        <button class="btn" id="deleteBtn">회원탈퇴</button>
-      </div>
+  <header>
+    <span>로그인 성공</span>
+    <div class="btn-group">
+      <button onclick="location.href='write.html'">소설 쓰기</button>
+      <button onclick="location.href='view.html'">내 소설 보기</button>
+      <button id="logoutBtn">로그아웃</button>
+      <button id="deleteBtn">회원 탈퇴</button>
+      <button id="adminBtn" style="display:none;">회원 목록</button> <!-- 기본 숨김 -->
     </div>
-    <div class="wave"><svg viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#ffcc00" d="M0,64L80,85.3C160,107,320,149,480,165.3C640,181,800,171,960,181.3C1120,192,1280,224,1360,240L1440,256V320H0Z"></path></svg></div>
-  </div>
-  <div class="bottom" id="welcome">환영합니다!</div>
+  </header>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged, signOut, deleteUser,
-      reauthenticateWithCredential, EmailAuthProvider,
-      setPersistence, browserLocalPersistence
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import {
-      getFirestore, doc, deleteDoc, collection, getDocs
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import { getAuth, signOut, deleteUser, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
@@ -58,52 +69,40 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db   = getFirestore(app);
 
-    // ✅ 로그인 상태를 로컬에 지속 저장 (탭 닫아도 유지)
-    await setPersistence(auth, browserLocalPersistence);
-
-    onAuthStateChanged(auth, (u)=>{
-      if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
-      document.getElementById('welcome').textContent = `환영합니다, ${u.displayName || '익명'}님!`;
-    });
-
-    document.getElementById('logoutBtn').onclick = async ()=> {
+    // 로그아웃
+    document.getElementById('logoutBtn').onclick = async () => {
       await signOut(auth);
       location.href = 'index.html';
     };
 
-    document.getElementById('deleteBtn').onclick = async ()=> {
-      const u = auth.currentUser;
-      if (!u) return alert('로그인이 필요합니다.');
-
-      const nickLower = (u.displayName || '').toLowerCase();
-      const pass = prompt('본인 확인을 위해 비밀번호를 다시 입력하세요.');
-      if (!pass) return;
-
-      try {
-        const cred = EmailAuthProvider.credential(`${nickLower}@novel.local`, pass);
-        await reauthenticateWithCredential(u, cred);
-
-        // 1) 내 소설 삭제
-        const novelsSnap = await getDocs(collection(db, `users/${u.uid}/novels`));
-        for (const d of novelsSnap.docs) await deleteDoc(d.ref);
-
-        // 2) 내 프로필 문서 삭제
-        await deleteDoc(doc(db, `users/${u.uid}`));
-
-        // 3) 닉네임 예약 문서 삭제(있으면)
-        try { await deleteDoc(doc(db, `nicknames/${nickLower}`)); } catch {}
-
-        // 4) 계정 삭제
-        await deleteUser(u);
-
-        alert('회원탈퇴가 완료되었습니다.');
-        location.href = 'index.html';
-      } catch (e) {
-        alert('탈퇴 실패: ' + e.message);
+    // 회원탈퇴
+    document.getElementById('deleteBtn').onclick = async () => {
+      if(confirm("정말 회원을 탈퇴하시겠습니까?")) {
+        try {
+          await deleteUser(auth.currentUser);
+          alert("회원 탈퇴가 완료되었습니다.");
+          location.href = 'index.html';
+        } catch (e) {
+          alert("회원 탈퇴 실패: " + e.message);
+        }
       }
     };
+
+    // 관리자만 회원 목록 버튼 보이기
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('admin') === 'tls123') {
+      document.getElementById('adminBtn').style.display = 'inline-block';
+      document.getElementById('adminBtn').onclick = () => location.href = 'tls123.html';
+    }
+
+    // 로그인 체크
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("로그인이 필요합니다.");
+        location.href = "login.html";
+      }
+    });
   </script>
 </body>
 </html>
