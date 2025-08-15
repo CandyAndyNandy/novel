@@ -4,13 +4,13 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>novel</title>
   <style>
-    html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
-    .top { background:#ff0000; height:20vh; position:relative; color:#fff; font-weight:700; font-size:32px; }
-    .top-content { position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; }
-    .top-buttons { position:absolute; left:20px; top:40%; transform:translateY(-50%); display:flex; flex-direction:column; gap:6px; }
-    .top-buttons .btn { background:#fff; color:#000; padding:6px 12px; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:700; }
-    .bottom { background:#ffcc00; height:80vh; display:flex; justify-content:center; align-items:center; font-size:22px; font-weight:700; color:#333; }
-    .wave { position:absolute; bottom:-1px; left:0; width:100%; height:100px; } svg{display:block;width:100%;height:100%}
+    html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:sans-serif}
+    .top{background:#f00;height:20vh;position:relative;color:#fff;font-weight:700;font-size:32px}
+    .top-content{position:relative;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
+    .top-buttons{position:absolute;left:20px;top:40%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+    .top-buttons .btn{background:#fff;color:#000;padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700}
+    .bottom{background:#ffcc00;height:80vh;display:flex;justify-content:center;align-items:center;font-size:22px;font-weight:700;color:#333}
+    .wave{position:absolute;bottom:-1px;left:0;width:100%;height:100px} svg{display:block;width:100%;height:100%}
   </style>
 </head>
 <body>
@@ -26,26 +26,28 @@
   </div>
   <div class="bottom" id="welcome">환영합니다!</div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
     const firebaseConfig = {
-      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwIE--6GWjPSjKw",
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
       projectId: "novel-app-33aa7",
-      storageBucket: "novel-app-33aa7.appspot.com",
+      storageBucket: "novel-app-33aa7.firebasestorage.app",
       messagingSenderId: "791233454587",
       appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
       measurementId: "G-BXT8Y97XW2"
     };
-    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
-    const auth = firebase.auth();
 
-    auth.onAuthStateChanged(u=>{
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (u)=>{
       if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
       document.getElementById('welcome').textContent = `환영합니다, ${u.displayName || '익명'}님!`;
     });
+    window.logout = () => signOut(auth);
   </script>
 </body>
 </html>
