@@ -14,28 +14,40 @@
     .btn + .btn { margin-left:6px; }
     .wave { position:absolute; bottom:-1px; left:0; width:100%; height:100px; }
     svg { display:block; width:100%; height:100%; }
+    .hint { font-size:12px; color:#333; opacity:.85; margin-top:4px; }
   </style>
 </head>
 <body>
+  <!-- 위: 빨강 50% -->
   <div class="top">
     NOVEL
-    <div class="wave"><svg viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path></svg></div>
-  </div>
-
-  <div class="bottom">
-    <div class="label">Nick name</div>
-    <input type="text" id="nickname" placeholder="닉네임 입력" />
-    <div class="label">Password</div>
-    <input type="password" id="password" placeholder="비밀번호 입력" />
-    <div style="margin-top:8px;">
-      <a class="btn" href="signup.html">가입하기</a>
-      <a class="btn" href="login.html">로그인</a>
+    <div class="wave">
+      <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path>
+      </svg>
     </div>
   </div>
 
-  <!-- 모듈 SDK: 초기화만 (필수) -->
+  <!-- 아래: 노랑 50% -->
+  <div class="bottom">
+    <div class="label">Nick name</div>
+    <input type="text" id="nickname" placeholder="영문/숫자 3~20자" />
+    <div class="label">Password</div>
+    <input type="password" id="password" placeholder="비밀번호 입력" />
+
+    <div style="margin-top:8px;">
+      <button class="btn" id="loginBtn">로그인</button>
+      <a class="btn" href="signup.html">가입하기</a>
+    </div>
+    <div class="hint">※ 이메일 없이 닉네임만 입력해도 됩니다.</div>
+  </div>
+
+  <!-- Firebase v12 모듈 SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+    // Firebase 설정 (네 프로젝트 값)
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
@@ -45,7 +57,37 @@
       appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
       measurementId: "G-BXT8Y97XW2"
     };
-    initializeApp(firebaseConfig);
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 닉네임 검증 + 이메일 변환
+    const validNick   = (n)=> /^[a-zA-Z0-9_]{3,20}$/.test(n);
+    const nickToEmail = (n)=> `${n}@novel.local`;
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const rawNick = document.getElementById('nickname').value.trim();
+      const pass    = document.getElementById('password').value.trim();
+
+      const nick = rawNick.toLowerCase();
+      if (!validNick(nick)) { alert('닉네임은 영문/숫자/밑줄 3~20자'); return; }
+      if (!pass) { alert('비밀번호를 입력하세요.'); return; }
+
+      try {
+        await signInWithEmailAndPassword(auth, nickToEmail(nick), pass);
+        // ✅ 로그인 성공 → 바로 success.html로 이동
+        location.href = 'success.html';
+      } catch (e) {
+        // 이미 가입이 안 되어 있거나 비번이 틀렸을 때
+        if (e.code === 'auth/invalid-login-credentials' || e.code === 'auth/user-not-found') {
+          alert('저장된 닉네임이 아니거나 비밀번호가 틀렸습니다.\n처음 오셨다면 [가입하기]를 눌러 가입해 주세요.');
+        } else if (e.code === 'auth/invalid-email') {
+          alert('닉네임을 다시 확인해 주세요.');
+        } else {
+          alert('오류: ' + e.message);
+        }
+      }
+    });
   </script>
 </body>
 </html>
