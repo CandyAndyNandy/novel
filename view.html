@@ -4,20 +4,24 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>내 소설 보기 - novel</title>
   <style>
-    html,body{margin:0;padding:0;height:100%;font-family:sans-serif;background:#ffcc00}
-    header{background:#f00;color:#fff;padding:10px 16px;font-size:20px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
-    .h-actions{display:flex;gap:8px} button{background:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:700}
-    main{display:grid;gap:16px;padding:16px}
-    .layout{display:grid;gap:16px;grid-template-columns:1fr}
-    @media(min-width:900px){.layout{grid-template-columns:340px 1fr}}
-    .list{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;max-height:70vh;overflow:auto}
-    .card{border:1px solid #eee;border-radius:10px;padding:10px;margin-bottom:10px;cursor:pointer;background:#fafafa}
-    .card:hover{background:#f3f3f3}.card-title{font-weight:700;margin-bottom:4px}.card-meta{font-size:12px;color:#555}
-    .detail{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px}
-    .title-box{border:2px solid #333;padding:10px;margin-bottom:10px;font-weight:bold;font-size:18px;background:#fff}
-    .meta{font-size:12px;color:#666;margin-bottom:8px}
-    .content-box{border:1px solid #555;padding:12px;white-space:pre-wrap;background:#fff;min-height:240px}
-    .empty{color:#333;font-weight:bold;text-align:center;padding:40px;background:#fff;border:1px dashed #aaa;border-radius:10px}
+    html, body { margin:0; padding:0; height:100%; font-family:sans-serif; background:#ffcc00; }
+    header { background:#ff0000; color:#fff; padding:10px 16px; font-size:20px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+    .h-actions { display:flex; gap:8px; }
+    button { background:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700; }
+    button:hover { background:#f0f0f0; }
+    main { display:grid; gap:16px; padding:16px; }
+    .layout { display:grid; gap:16px; grid-template-columns:1fr; }
+    @media(min-width:900px){ .layout { grid-template-columns:340px 1fr; } }
+    .list { background:#fff; border:1px solid #ddd; border-radius:10px; padding:12px; max-height:70vh; overflow:auto; }
+    .card { border:1px solid #eee; border-radius:10px; padding:10px; margin-bottom:10px; cursor:pointer; background:#fafafa; }
+    .card:hover { background:#f3f3f3; }
+    .card-title { font-weight:700; margin-bottom:4px; }
+    .card-meta { font-size:12px; color:#555; }
+    .detail { background:#fff; border:1px solid #ddd; border-radius:10px; padding:16px; }
+    .title-box { border:2px solid #333; padding:10px; margin-bottom:10px; font-weight:bold; font-size:18px; background:#fff; }
+    .meta { font-size:12px; color:#666; margin-bottom:8px; }
+    .content-box { border:1px solid #555; padding:12px; white-space:pre-wrap; background:#fff; min-height:240px; }
+    .empty { color:#333; font-weight:bold; text-align:center; padding:40px; background:#fff; border:1px dashed #aaa; border-radius:10px; }
   </style>
 </head>
 <body>
@@ -44,45 +48,70 @@
     </div>
   </main>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-init.js"></script>
   <script>
-    let user=null;
-    auth.onAuthStateChanged(async(u)=>{ if(!u){alert('로그인이 필요합니다.');location.href='login.html';return;} user=u; loadList(); });
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwIE--6GWjPSjKw",
+      authDomain: "novel-app-33aa7.firebaseapp.com",
+      projectId: "novel-app-33aa7",
+      storageBucket: "novel-app-33aa7.appspot.com",
+      messagingSenderId: "791233454587",
+      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+      measurementId: "G-BXT8Y97XW2"
+    };
+    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    let user = null;
+    auth.onAuthStateChanged(async(u)=>{
+      if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
+      user = u; loadList();
+    });
 
     async function loadList(){
       const listEl=document.getElementById('list'), titleEl=document.getElementById('titleBox'),
             contentEl=document.getElementById('contentBox'), metaEl=document.getElementById('metaBox'),
             detailEl=document.getElementById('detail'), emptyEl=document.getElementById('emptyState');
       listEl.innerHTML='불러오는 중…';
+
       try{
-        const qs=await db.collection('users').doc(user.uid).collection('novels').orderBy('createdAt','desc').get();
+        const qs = await db.collection('users').doc(user.uid).collection('novels').orderBy('createdAt','desc').get();
         if(qs.empty){ detailEl.style.display='none'; emptyEl.style.display=''; listEl.innerHTML=''; return; }
+
         listEl.innerHTML=''; const params=new URLSearchParams(location.search); const wantId=params.get('id'); let first=null;
+
         qs.forEach(doc=>{
-          const n={id:doc.id,...doc.data()};
+          const n={id:doc.id, ...doc.data()};
           const card=document.createElement('div'); card.className='card'; card.onclick=()=>showDetail(n);
           const t=document.createElement('div'); t.className='card-title'; t.textContent=n.title||'제목 없음';
           const m=document.createElement('div'); m.className='card-meta';
-          const dt=n.createdAt?.toDate ? n.createdAt.toDate() : new Date(); const ts=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+          const dt=n.createdAt?.toDate ? n.createdAt.toDate() : new Date();
+          const ts=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
           m.textContent=`${n.author || (user.displayName||'익명')} · ${ts}`;
-          const p=document.createElement('div'); p.style.fontSize='12px'; p.style.color='#333'; p.textContent=(n.content||'').slice(0,60)+((n.content||'').length>60?'…':'');
+          const p=document.createElement('div'); p.style.fontSize='12px'; p.style.color='#333';
+          p.textContent=(n.content||'').slice(0,60)+((n.content||'').length>60?'…':'');
           card.appendChild(t); card.appendChild(m); card.appendChild(p); listEl.appendChild(card);
+
           if(!first) first=n; if(wantId && n.id===wantId) first=n;
         });
+
         if(first) showDetail(first);
-      }catch(e){ alert('불러오기 실패: '+e.message); }
+      }catch(e){
+        alert('불러오기 실패: ' + e.message);
+      }
     }
+
     function showDetail(n){
-      document.getElementById('titleBox').textContent=n.title||'제목 없음';
-      document.getElementById('contentBox').textContent=n.content||'내용 없음';
+      document.getElementById('titleBox').textContent = n.title || '제목 없음';
+      document.getElementById('contentBox').textContent = n.content || '내용 없음';
       const dt=n.createdAt?.toDate ? n.createdAt.toDate() : new Date();
       const ts=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-      document.getElementById('metaBox').textContent=`${n.author || (user.displayName||'익명')} · ${ts}`;
+      document.getElementById('metaBox').textContent = `${n.author || (user.displayName||'익명')} · ${ts}`;
     }
+
     async function logout(){ await auth.signOut(); location.href='index.html'; }
   </script>
 </body>
