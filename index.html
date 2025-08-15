@@ -13,14 +13,21 @@
     }
     .top {
       background-color: #ff0000; /* 빨간색 */
-      height: 50vh; /* 화면의 절반 */
+      height: 50vh; /* 화면 절반 */
       position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 15px; /* 글자 크기 */
+      color: white; /* 글자 색 */
+      font-family: sans-serif;
+      font-weight: bold;
     }
     .bottom {
       background-color: #ffcc00; /* 노란색 */
-      height: 50vh; /* 화면의 절반 */
+      height: 50vh; /* 화면 절반 */
     }
-    /* 물결 모양 만들기 */
+    /* 물결 모양 */
     .wave {
       position: absolute;
       bottom: -1px;
@@ -37,6 +44,7 @@
 </head>
 <body>
   <div class="top">
+    NOVEL
     <div class="wave">
       <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
         <path fill="#ffcc00" d="M0,160L80,165.3C160,171,320,181,480,197.3C640,213,800,235,960,213.3C1120,192,1280,128,1360,96L1440,64V320H0Z"></path>
