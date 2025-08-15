@@ -10,6 +10,7 @@
     .label{font-size:20px;font-weight:700}
     input{padding:8px 10px;font-size:16px;border:1px solid #ccc;border-radius:6px;width:240px;outline:none}
     .btn{margin-top:8px;display:inline-block;padding:10px 16px;border-radius:8px;border:1px solid #333;background:#fff;font-weight:700;cursor:pointer}
+    .hint{font-size:12px;color:#333;opacity:.8}
     .wave{position:absolute;bottom:-1px;left:0;width:100%;height:100px} svg{display:block;width:100%;height:100%}
   </style>
 </head>
@@ -21,18 +22,21 @@
 
   <div class="bottom">
     <div class="label">Nick name</div>
-    <input type="text" id="nickname" placeholder="닉네임 입력" />
+    <input type="text" id="nickname" placeholder="영문/숫자 3~20자" />
     <div class="label">Password</div>
     <input type="password" id="password" placeholder="비밀번호 입력" />
     <button class="btn" onclick="signup()">저장</button>
     <a class="btn" href="index.html">← 처음 화면</a>
+    <div class="hint">※ 이메일은 필요 없습니다. 닉네임만 입력하면 됩니다.</div>
   </div>
 
+  <!-- Firebase v12 모듈 SDK (compat 섞지 마세요) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
+    // 프로젝트 설정
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
@@ -46,29 +50,61 @@
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
-    const nickToEmail = (n)=>`${n}@novel.local`;
 
+    // 닉네임 → 가짜 이메일 변환 (도메인 검증하지 않음)
+    const nickToEmail = (n)=> `${n}@novel.local`;
+
+    // 닉네임 형식 검사 (영문/숫자/언더스코어 3~20자)
+    const validNick = (n)=> /^[a-zA-Z0-9_]{3,20}$/.test(n);
+
+    // 닉네임 중복 방지(선택): nicknames/{nickLower} 문서 예약
+    async function reserveNickname(nickLower, uid){
+      const ref = doc(db, "nicknames", nickLower);
+      const snap = await getDoc(ref);
+      if (snap.exists()) return false;             // 이미 사용 중
+      await setDoc(ref, { uid, createdAt: serverTimestamp() });
+      return true;
+    }
+
+    // onclick에서 호출
     window.signup = async function(){
       const nick = document.getElementById('nickname').value.trim();
       const pass = document.getElementById('password').value.trim();
-      if(!nick || !pass){ alert('닉네임/비밀번호를 입력하세요.'); return; }
 
-      const email = nickToEmail(nick);
+      if(!validNick(nick)){ alert("닉네임은 영문/숫자/밑줄 3~20자로 입력하세요."); return; }
+      if(!pass){ alert("비밀번호를 입력하세요."); return; }
+
+      const email = nickToEmail(nick.toLowerCase());
+
       try {
+        // 새 사용자 생성
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+        // 닉네임 예약(중복 방지) — 이미 누가 썼다면 되돌리고 안내
+        const ok = await reserveNickname(nick.toLowerCase(), cred.user.uid);
+        if (!ok) { alert("이미 사용 중인 닉네임입니다."); return; }
+
+        // 프로필/유저 문서 저장
         await updateProfile(cred.user, { displayName: nick });
-        await setDoc(doc(db, "users", cred.user.uid), { nickname:nick, createdAt: serverTimestamp() }, { merge:true });
-        alert('가입 완료!'); location.href='index.html';
+        await setDoc(doc(db,"users",cred.user.uid), {
+          nickname:nick, createdAt: serverTimestamp()
+        }, { merge:true });
+
+        alert("가입 완료!"); location.href="index.html";
       } catch (e) {
-        if (e.code === 'auth/email-already-in-use') {
+        if (e.code === "auth/email-already-in-use") {
+          // 이미 가입된 닉네임이면 로그인 시도
           try {
             await signInWithEmailAndPassword(auth, email, pass);
-            alert('이미 가입된 닉네임입니다. 로그인 완료!'); location.href='index.html';
+            alert("이미 가입된 닉네임입니다. 로그인 완료!"); location.href="index.html";
           } catch {
-            alert('비밀번호가 다릅니다.');
+            alert("비밀번호가 다릅니다.");
           }
+        } else if (e.code === "auth/invalid-email") {
+          // (이론상 발생하지 않지만 안전장치)
+          alert("닉네임을 다시 확인해 주세요.");
         } else {
-          alert('오류: ' + e.message);
+          alert("오류: " + e.message);
         }
       }
     }
