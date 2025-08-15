@@ -7,43 +7,40 @@
   <style>
     html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
     header {
-      background:#ff0000; color:white; padding:10px 20px; font-size:20px; font-weight:bold;
+      background:#ff0000; color:white; padding:10px 16px; font-size:20px; font-weight:bold;
       display:flex; justify-content:space-between; align-items:center;
     }
+    .h-actions { display:flex; gap:8px; }
     button {
       background:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;
       font-weight:bold;
     }
     button:hover { background:#f0f0f0; }
     .container {
-      padding:20px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      height:calc(100% - 50px);
+      padding:16px;
+      display:flex; flex-direction:column; gap:10px;
+      height:calc(100% - 52px);
+      background:#ffcc00;
     }
     input.title {
-      font-size:18px;
-      padding:8px;
-      border:1px solid #ccc;
-      border-radius:6px;
-      width:100%;
+      font-size:18px; padding:10px; border:1px solid #ccc; border-radius:6px; width:100%;
+      background:white;
     }
     textarea {
-      flex:1;
-      font-size:16px;
-      padding:10px;
-      border:1px solid #ccc;
-      border-radius:6px;
-      resize:none;
+      flex:1; font-size:16px; padding:10px; border:1px solid #ccc; border-radius:6px; resize:none;
+      background:white;
     }
   </style>
 </head>
 <body>
   <header>
     <span>소설 쓰기</span>
-    <button onclick="saveNovel()">저장</button>
+    <div class="h-actions">
+      <button onclick="location.href='view.html'">목록 보기</button>
+      <button onclick="saveNovel()">저장</button>
+    </div>
   </header>
+
   <div class="container">
     <input type="text" id="title" class="title" placeholder="제목을 입력하세요" />
     <textarea id="content" placeholder="여기에 소설 내용을 작성하세요..."></textarea>
@@ -53,22 +50,32 @@
     function saveNovel() {
       const title = document.getElementById('title').value.trim();
       const content = document.getElementById('content').value.trim();
-
       if (!title || !content) {
         alert('제목과 내용을 모두 입력해주세요.');
         return;
       }
 
+      const author = (localStorage.getItem('nickname') || '익명').trim() || '익명';
+      const novel = {
+        id: Date.now(),
+        title,
+        content,
+        author,
+        createdAt: new Date().toISOString()
+      };
+
       try {
-        localStorage.setItem('novelTitle', title);
-        localStorage.setItem('novelContent', content);
+        const list = JSON.parse(localStorage.getItem('novels') || '[]');
+        list.push(novel);
+        localStorage.setItem('novels', JSON.stringify(list));
       } catch (e) {
         alert('저장 실패: 브라우저 저장소를 사용할 수 없습니다.');
         return;
       }
 
       alert('소설이 저장되었습니다.');
-      window.location.href = 'view.html';
+      // 최신 저장한 편을 바로 보이게 하기 위해 쿼리로 id 전달
+      window.location.href = 'view.html?id=' + novel.id;
     }
   </script>
 </body>
