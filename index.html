@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>novel</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
     .top {
       background-color: #ff0000; /* 빨강 */
       height: 50vh;
       position: relative;
       display: flex; justify-content: center; align-items: center;
-      font-size: 30px; color: #fff; font-family: sans-serif; font-weight: bold;
+      font-size: 30px; color: #fff; font-weight: bold;
     }
     .bottom {
       background-color: #ffcc00; /* 노랑 */
       height: 50vh;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
-      font-family: sans-serif; gap: 10px;
+      gap: 10px;
     }
     .label { font-size: 20px; font-weight: bold; color: #000; }
     input {
@@ -25,7 +25,6 @@
       outline: none;
     }
     .btn {
-      margin-top: 10px;
       display: inline-block; padding: 10px 16px; border-radius: 8px;
       border: 1px solid #333; background: #fff; color: #111; text-decoration: none;
       font-weight: 700; font-size: 16px; cursor: pointer;
@@ -54,8 +53,27 @@
     <div class="label">Password</div>
     <input type="password" id="password" placeholder="비밀번호 입력" />
 
-    <!-- 가입하기 버튼 -->
-    <a class="btn" href="signup.html">가입하기</a>
+    <!-- 로그인 버튼: 가입 완료한 사람에게만 보이기 -->
+    <a id="loginBtn" class="btn" href="login.html" style="display:none; margin-top:6px;">로그인</a>
+
+    <!-- 가입하기 버튼: 항상 표시 -->
+    <a class="btn" href="signup.html" style="margin-top:10px;">가입하기</a>
   </div>
+
+  <script>
+    // 가입을 완료한 사용자(localStorage.registered === 'true')에게만 로그인 버튼 표시
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const isRegistered = localStorage.getItem('registered') === 'true';
+        const loginBtn = document.getElementById('loginBtn');
+        if (isRegistered && loginBtn) {
+          loginBtn.style.display = 'inline-block';
+        }
+      } catch (e) {
+        // 브라우저가 localStorage를 막은 경우 대비
+        console.warn('Storage not available:', e);
+      }
+    });
+  </script>
 </body>
 </html>
