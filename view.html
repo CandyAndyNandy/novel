@@ -17,12 +17,14 @@
     .card:hover{background:#f3f3f3}
     .card-title{font-weight:700;margin-bottom:4px}
     .card-meta{font-size:12px;color:#555}
-    .detail{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px;min-height:320px}
+    .detail{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px;min-height:320px;position:relative}
     .title-box{border:2px solid #333;padding:10px;margin-bottom:10px;font-weight:bold;font-size:18px;background:#fff}
     .meta{font-size:12px;color:#666;margin-bottom:8px}
     .content-box{border:1px solid #555;padding:12px;white-space:pre-wrap;background:#fff;min-height:220px}
     .empty{color:#333;font-weight:bold;text-align:center;padding:40px;background:#fff;border:1px dashed #aaa;border-radius:10px}
-    .row-actions{display:flex;gap:8px;margin-top:10px}
+    .row-actions{display:flex;gap:8px;margin-top:12px;align-items:center}
+    .row-actions .spacer{flex:1}
+    .pill{font-size:12px;border:1px solid #ddd;border-radius:999px;padding:2px 8px;background:#fafafa}
   </style>
 </head>
 <body>
@@ -42,7 +44,12 @@
         <div id="titleBox" class="title-box">제목 없음</div>
         <div id="metaBox" class="meta"></div>
         <div id="contentBox" class="content-box">내용 없음</div>
+
         <div class="row-actions">
+          <span id="pubHint" class="pill" style="display:none;">공개됨</span>
+          <button id="publishBtn">송출</button>
+          <button id="editBtn">수정</button>
+          <span class="spacer"></span>
           <button id="deleteBtn" title="이 글 삭제">삭제</button>
         </div>
       </section>
@@ -58,10 +65,10 @@
       getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import {
-      getFirestore, collection, getDocs, query, orderBy, doc, getDoc, deleteDoc
+      getFirestore, collection, getDocs, query, orderBy, doc, getDoc, deleteDoc,
+      addDoc, serverTimestamp, getCountFromServer, where
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
@@ -75,8 +82,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
-
-    // 로그인 영구 저장
     await setPersistence(auth, browserLocalPersistence);
 
     const listEl    = document.getElementById('list');
@@ -86,21 +91,20 @@
     const detailEl  = document.getElementById('detail');
     const emptyEl   = document.getElementById('emptyState');
     const deleteBtn = document.getElementById('deleteBtn');
+    const publishBtn= document.getElementById('publishBtn');
+    const editBtn   = document.getElementById('editBtn');
+    const pubHint   = document.getElementById('pubHint');
     const logoutBtn = document.getElementById('logoutBtn');
 
     let currentUser = null;
-    let currentDocId = null;
+    let currentDoc  = null; // {id, title, content, createdAt, ...}
 
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-      location.href = 'index.html';
-    };
+    logoutBtn.onclick = async () => { await signOut(auth); location.href='index.html'; };
 
     onAuthStateChanged(auth, async (u)=>{
       if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
       currentUser = u;
       await loadList();
-      // URL로 특정 글을 지정했다면 열기
       const params = new URLSearchParams(location.search);
       const wantId = params.get('id');
       if (wantId) { await openById(wantId); }
@@ -135,7 +139,6 @@
           listEl.appendChild(card);
         }
 
-        // 첫 글 열기
         const first = qs.docs[0];
         if (first) showDetail({ id:first.id, ...first.data() });
 
@@ -155,24 +158,65 @@
       return `${author} · ${y}-${M}-${D} ${h}:${m}`;
     }
 
+    async function checkPublished(ownerUid, sourceId){
+      // 이미 공개 피드에 올라갔는지 확인
+      const col = collection(db, 'public_novels');
+      const q = query(col, where('ownerUid','==',ownerUid), where('sourceId','==',sourceId));
+      const snap = await getCountFromServer(q);
+      return snap.data().count > 0;
+    }
+
+    async function updatePubHint(){
+      if (!currentDoc) return;
+      const published = await checkPublished(currentUser.uid, currentDoc.id);
+      pubHint.style.display = published ? '' : 'none';
+      publishBtn.disabled   = published;
+      publishBtn.textContent= published ? '송출됨' : '송출';
+      publishBtn.title      = published ? '이미 공개 피드에 송출되었습니다.' : '';
+    }
+
     function showDetail(n){
-      currentDocId = n.id;
+      currentDoc = n;
       titleEl.textContent   = n.title || '제목 없음';
       contentEl.textContent = n.content || '내용 없음';
       metaEl.textContent    = buildMeta(n);
 
-      // 삭제 버튼 핸들러 갱신
+      // 버튼 동작
+      editBtn.onclick = ()=> location.href = `write.html?id=${n.id}`;
       deleteBtn.onclick = async ()=>{
         if (!confirm('이 글을 삭제할까요?')) return;
         try{
-          await deleteDoc(doc(db, `users/${currentUser.uid}/novels/${currentDocId}`));
+          await deleteDoc(doc(db, `users/${currentUser.uid}/novels/${n.id}`));
           alert('삭제되었습니다.');
-          currentDocId = null;
+          currentDoc = null;
           await loadList();
         }catch(e){
           alert('삭제 실패: ' + e.message);
         }
       };
+      publishBtn.onclick = async ()=>{
+        if (!currentDoc) return;
+        try{
+          // 중복 송출 방지
+          const already = await checkPublished(currentUser.uid, currentDoc.id);
+          if (already){ await updatePubHint(); alert('이미 송출된 글입니다.'); return; }
+
+          await addDoc(collection(db, 'public_novels'), {
+            title: currentDoc.title || '',
+            content: currentDoc.content || '',
+            author: currentUser.displayName || '익명',
+            ownerUid: currentUser.uid,
+            sourceId: currentDoc.id,
+            createdAt: serverTimestamp()
+          });
+          await updatePubHint();
+          alert('공개 피드로 송출되었습니다. 성공 페이지에서 확인할 수 있어요!');
+        }catch(e){
+          alert('송출 실패: ' + e.message);
+        }
+      };
+
+      updatePubHint();
     }
 
     async function openById(id){
