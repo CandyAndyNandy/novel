@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>소설 상세보기</title>
+  <style>
+    body{font-family:sans-serif;margin:0;padding:20px;background:#fffbe6;}
+    .container{max-width:800px;margin:0 auto;background:#fff;border-radius:8px;padding:20px;box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+    h1{font-size:22px;margin-bottom:8px;}
+    .meta{color:#666;font-size:13px;margin-bottom:16px;}
+    .content{white-space:pre-wrap;line-height:1.5;font-size:15px;}
+    .back{margin-top:20px;display:inline-block;padding:8px 14px;border-radius:6px;background:#ffcc00;border:none;cursor:pointer;font-weight:700;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">(제목)</h1>
+    <div class="meta" id="meta"></div>
+    <div class="content" id="content"></div>
+    <button class="back" onclick="history.back()">← 돌아가기</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+      authDomain: "novel-app-33aa7.firebaseapp.com",
+      projectId: "novel-app-33aa7",
+      storageBucket: "novel-app-33aa7.firebasestorage.app",
+      messagingSenderId: "791233454587",
+      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+      measurementId: "G-BXT8Y97XW2"
+    };
+    const app=initializeApp(firebaseConfig);
+    const db=getFirestore(app);
+
+    const params=new URLSearchParams(location.search);
+    const id=params.get("
