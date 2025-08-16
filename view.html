@@ -1,79 +1,105 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>내 소설 보기 - novel</title>
+  <meta charset="UTF-8">
+  <title>내 소설 보기</title>
   <style>
-    html,body{margin:0;padding:0;height:100%;font-family:sans-serif;background:#ffcc00}
-    header{background:#f00;color:#fff;padding:10px 16px;font-size:20px;font-weight:700;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2}
-    .h-actions{display:flex;gap:8px}
-    button{background:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:700}
-    button:hover{background:#f4f4f4}
-    main{display:grid;gap:16px;padding:16px}
-    .layout{display:grid;gap:16px;grid-template-columns:1fr}
-    @media(min-width:900px){.layout{grid-template-columns:340px 1fr}}
-    .list{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;max-height:70vh;overflow:auto}
-    .card{border:1px solid #eee;border-radius:10px;padding:10px;margin-bottom:10px;cursor:pointer;background:#fafafa}
-    .card:hover{background:#f3f3f3}
-    .card-title{font-weight:700;margin-bottom:4px}
-    .card-meta{font-size:12px;color:#555}
-    .detail{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px;min-height:320px;position:relative}
-    .title-box{border:2px solid #333;padding:10px;margin-bottom:10px;font-weight:bold;font-size:18px;background:#fff}
-    .meta{font-size:12px;color:#666;margin-bottom:8px}
-    .content-box{border:1px solid #555;padding:12px;white-space:pre-wrap;background:#fff;min-height:220px}
-    .empty{color:#333;font-weight:bold;text-align:center;padding:40px;background:#fff;border:1px dashed #aaa;border-radius:10px}
-    .row-actions{display:flex;gap:8px;margin-top:12px;align-items:center}
-    .row-actions .spacer{flex:1}
-    .pill{font-size:12px;border:1px solid #ddd;border-radius:999px;padding:2px 8px;background:#fafafa}
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fff8dc;
+    }
+    .container {
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .novel {
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 15px;
+      background: #fff;
+    }
+    .novel button {
+      margin-right: 10px;
+      background: white;
+      color: black;
+      border: 1px solid black;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    /* 팝업창 */
+    .popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-content {
+      background: yellow;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px;
+    }
+    .popup-content button {
+      display: block;
+      margin: 10px auto;
+      background: white;
+      border: 1px solid black;
+      color: black;
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+    .bundle-list {
+      max-height: 200px;
+      overflow-y: scroll;
+      border: 1px solid #aaa;
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+    }
+    .bundle-list button {
+      margin: 5px 0;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <span>내 소설 보기</span>
-    <div class="h-actions">
-      <button onclick="location.href='success.html'">홈으로</button>
-      <button onclick="location.href='write.html'">새로 쓰기</button>
-      <button id="logoutBtn">로그아웃</button>
-    </div>
-  </header>
+  <div class="container">
+    <h1>내 소설 목록</h1>
+    <div id="novelList"></div>
+  </div>
 
-  <main>
-    <div class="layout">
-      <aside class="list" id="list">불러오는 중…</aside>
-      <section class="detail" id="detail" style="display:none">
-        <div id="titleBox" class="title-box">제목 없음</div>
-        <div id="metaBox" class="meta"></div>
-        <div id="contentBox" class="content-box">내용 없음</div>
-
-        <div class="row-actions">
-          <span id="pubHint" class="pill" style="display:none;">공개됨</span>
-          <button id="publishBtn">송출</button>
-          <button id="editBtn">수정</button>
-          <span class="spacer"></span>
-          <button id="deleteBtn" title="이 글 삭제">삭제</button>
-        </div>
-      </section>
+  <!-- 팝업 -->
+  <div class="popup" id="bundlePopup">
+    <div class="popup-content">
+      <h2>묶음 선택</h2>
+      <button onclick="showNewBundleInput()">새 묶음 만들기</button>
+      <div id="newBundleInput" style="display:none;">
+        <input type="text" id="bundleName" placeholder="묶음 이름 입력">
+        <button onclick="createBundle()">확인</button>
+      </div>
+      <button onclick="showBundleList()">묶음에 포함하기</button>
+      <div id="bundleList" class="bundle-list" style="display:none;"></div>
+      <button onclick="closePopup()">닫기</button>
     </div>
-    <div id="emptyState" class="empty" style="display:none;">
-      저장된 소설이 없습니다. <button onclick="location.href='write.html'">지금 쓰기</button>
-    </div>
-  </main>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import {
-      getFirestore, collection, getDocs, query, orderBy, doc, getDoc, deleteDoc,
-      addDoc, serverTimestamp, getCountFromServer, where
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, deleteDoc, addDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
       projectId: "novel-app-33aa7",
-      storageBucket: "novel-app-33aa7.firebasestorage.app",
+      storageBucket: "novel-app-33aa7.appspot.com",
       messagingSenderId: "791233454587",
       appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
       measurementId: "G-BXT8Y97XW2"
@@ -81,151 +107,117 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db   = getFirestore(app);
-    await setPersistence(auth, browserLocalPersistence);
-
-    const listEl    = document.getElementById('list');
-    const titleEl   = document.getElementById('titleBox');
-    const contentEl = document.getElementById('contentBox');
-    const metaEl    = document.getElementById('metaBox');
-    const detailEl  = document.getElementById('detail');
-    const emptyEl   = document.getElementById('emptyState');
-    const deleteBtn = document.getElementById('deleteBtn');
-    const publishBtn= document.getElementById('publishBtn');
-    const editBtn   = document.getElementById('editBtn');
-    const pubHint   = document.getElementById('pubHint');
-    const logoutBtn = document.getElementById('logoutBtn');
+    const db = getFirestore(app);
 
     let currentUser = null;
-    let currentDoc  = null; // {id, title, content, createdAt, ...}
+    let currentNovelId = null;
 
-    logoutBtn.onclick = async () => { await signOut(auth); location.href='index.html'; };
-
-    onAuthStateChanged(auth, async (u)=>{
-      if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
-      currentUser = u;
-      await loadList();
-      const params = new URLSearchParams(location.search);
-      const wantId = params.get('id');
-      if (wantId) { await openById(wantId); }
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loadNovels();
+      } else {
+        alert("로그인 후 이용해주세요.");
+        window.location.href = "index.html";
+      }
     });
 
-    async function loadList(){
-      listEl.textContent = '불러오는 중…';
-      try{
-        const q = query(collection(db, `users/${currentUser.uid}/novels`), orderBy('createdAt','desc'));
-        const qs = await getDocs(q);
-
-        if (qs.empty) {
-          listEl.innerHTML = '';
-          detailEl.style.display='none';
-          emptyEl.style.display='';
-          return;
-        }
-
-        emptyEl.style.display='none';
-        detailEl.style.display='';
-        listEl.innerHTML = '';
-
-        for (const d of qs.docs){
-          const n = { id:d.id, ...d.data() };
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.onclick = () => showDetail(n);
-          const t = document.createElement('div'); t.className='card-title'; t.textContent = n.title || '제목 없음';
-          const m = document.createElement('div'); m.className='card-meta'; m.textContent = buildMeta(n);
-          const p = document.createElement('div'); p.style.fontSize='12px'; p.style.color='#333'; p.textContent = (n.content || '').slice(0,60) + ((n.content||'').length>60?'…':'');
-          card.appendChild(t); card.appendChild(m); card.appendChild(p);
-          listEl.appendChild(card);
-        }
-
-        const first = qs.docs[0];
-        if (first) showDetail({ id:first.id, ...first.data() });
-
-      }catch(e){
-        alert('불러오기 실패: ' + e.message);
-      }
+    async function loadNovels() {
+      const list = document.getElementById("novelList");
+      list.innerHTML = "";
+      const q = await getDocs(collection(db, "users", currentUser.uid, "novels"));
+      q.forEach((docSnap) => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "novel";
+        div.innerHTML = `
+          <h3>${data.title}</h3>
+          <p>${data.content}</p>
+          <button onclick="deleteNovel('${docSnap.id}')">삭제</button>
+          <button onclick="editNovel('${docSnap.id}', '${data.title}', \`${data.content}\`)">수정</button>
+          <button onclick="publishNovel('${docSnap.id}', '${data.title}', \`${data.content}\`)">송출</button>
+          <button onclick="openPopup('${docSnap.id}', '${data.title}', \`${data.content}\`)">송출 묶음</button>
+        `;
+        list.appendChild(div);
+      });
     }
 
-    function buildMeta(n){
-      const dt = n.createdAt?.toDate ? n.createdAt.toDate() : new Date();
-      const y = dt.getFullYear();
-      const M = String(dt.getMonth()+1).padStart(2,'0');
-      const D = String(dt.getDate()).padStart(2,'0');
-      const h = String(dt.getHours()).padStart(2,'0');
-      const m = String(dt.getMinutes()).padStart(2,'0');
-      const author = n.author || (currentUser?.displayName || '익명');
-      return `${author} · ${y}-${M}-${D} ${h}:${m}`;
+    // 삭제
+    window.deleteNovel = async function(id) {
+      await deleteDoc(doc(db, "users", currentUser.uid, "novels", id));
+      loadNovels();
     }
 
-    async function checkPublished(ownerUid, sourceId){
-      // 이미 공개 피드에 올라갔는지 확인
-      const col = collection(db, 'public_novels');
-      const q = query(col, where('ownerUid','==',ownerUid), where('sourceId','==',sourceId));
-      const snap = await getCountFromServer(q);
-      return snap.data().count > 0;
+    // 수정
+    window.editNovel = function(id, title, content) {
+      localStorage.setItem("editId", id);
+      localStorage.setItem("editTitle", title);
+      localStorage.setItem("editContent", content);
+      window.location.href = "write.html";
     }
 
-    async function updatePubHint(){
-      if (!currentDoc) return;
-      const published = await checkPublished(currentUser.uid, currentDoc.id);
-      pubHint.style.display = published ? '' : 'none';
-      publishBtn.disabled   = published;
-      publishBtn.textContent= published ? '송출됨' : '송출';
-      publishBtn.title      = published ? '이미 공개 피드에 송출되었습니다.' : '';
+    // 단독 송출
+    window.publishNovel = async function(id, title, content) {
+      await addDoc(collection(db, "feed"), {
+        uid: currentUser.uid,
+        title, content,
+        createdAt: Date.now()
+      });
+      alert("공개 피드에 송출되었습니다!");
     }
 
-    function showDetail(n){
-      currentDoc = n;
-      titleEl.textContent   = n.title || '제목 없음';
-      contentEl.textContent = n.content || '내용 없음';
-      metaEl.textContent    = buildMeta(n);
+    // 묶음 팝업 열기
+    window.openPopup = function(id, title, content) {
+      currentNovelId = {id, title, content};
+      document.getElementById("bundlePopup").style.display = "flex";
+    }
+    window.closePopup = function() {
+      document.getElementById("bundlePopup").style.display = "none";
+      document.getElementById("newBundleInput").style.display = "none";
+      document.getElementById("bundleList").style.display = "none";
+    }
 
-      // 버튼 동작
-      editBtn.onclick = ()=> location.href = `write.html?id=${n.id}`;
-      deleteBtn.onclick = async ()=>{
-        if (!confirm('이 글을 삭제할까요?')) return;
-        try{
-          await deleteDoc(doc(db, `users/${currentUser.uid}/novels/${n.id}`));
-          alert('삭제되었습니다.');
-          currentDoc = null;
-          await loadList();
-        }catch(e){
-          alert('삭제 실패: ' + e.message);
-        }
-      };
-      publishBtn.onclick = async ()=>{
-        if (!currentDoc) return;
-        try{
-          // 중복 송출 방지
-          const already = await checkPublished(currentUser.uid, currentDoc.id);
-          if (already){ await updatePubHint(); alert('이미 송출된 글입니다.'); return; }
+    // 새 묶음 만들기
+    window.showNewBundleInput = function() {
+      document.getElementById("newBundleInput").style.display = "block";
+      document.getElementById("bundleList").style.display = "none";
+    }
+    window.createBundle = async function() {
+      const name = document.getElementById("bundleName").value.trim();
+      if (!name) return alert("묶음 이름을 입력하세요.");
+      const bundleRef = await addDoc(collection(db, "bundles"), {
+        name,
+        createdAt: Date.now()
+      });
+      // 소설 넣기
+      await addDoc(collection(db, "bundles", bundleRef.id, "novels"), {
+        ...currentNovelId,
+        createdAt: Date.now()
+      });
+      alert("새 묶음이 생성되고 송출되었습니다!");
+      closePopup();
+    }
 
-          await addDoc(collection(db, 'public_novels'), {
-            title: currentDoc.title || '',
-            content: currentDoc.content || '',
-            author: currentUser.displayName || '익명',
-            ownerUid: currentUser.uid,
-            sourceId: currentDoc.id,
-            createdAt: serverTimestamp()
+    // 기존 묶음 목록 보여주기
+    window.showBundleList = async function() {
+      const listDiv = document.getElementById("bundleList");
+      listDiv.style.display = "block";
+      listDiv.innerHTML = "";
+      const q = await getDocs(collection(db, "bundles"));
+      q.forEach((docSnap) => {
+        const b = docSnap.data();
+        const btn = document.createElement("button");
+        btn.innerText = b.name;
+        btn.onclick = async () => {
+          await addDoc(collection(db, "bundles", docSnap.id, "novels"), {
+            ...currentNovelId,
+            createdAt: Date.now()
           });
-          await updatePubHint();
-          alert('공개 피드로 송출되었습니다. 성공 페이지에서 확인할 수 있어요!');
-        }catch(e){
-          alert('송출 실패: ' + e.message);
-        }
-      };
-
-      updatePubHint();
-    }
-
-    async function openById(id){
-      try{
-        const snap = await getDoc(doc(db, `users/${currentUser.uid}/novels/${id}`));
-        if (snap.exists()){
-          showDetail({ id:snap.id, ...snap.data() });
-        }
-      }catch(e){ /* 무시 */ }
+          alert("묶음에 포함되었습니다!");
+          closePopup();
+        };
+        listDiv.appendChild(btn);
+      });
     }
   </script>
 </body>
