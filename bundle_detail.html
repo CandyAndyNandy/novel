@@ -1,0 +1,64 @@
+<!-- /novel/bundle_detail.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>시리즈 보기</title>
+<style>
+  body{margin:0;padding:20px;font-family:sans-serif;background:#fff176}
+  .panel{max-width:900px;margin:0 auto;background:#fff;border:1px solid #000;border-radius:10px;padding:16px}
+  h1{margin:0 0 10px 0;font-size:20px}
+  .item{margin-bottom:8px}
+  .btn{display:block;width:100%;text-align:left;background:#fff;color:#000;border:1px solid #000;border-radius:6px;padding:10px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1 id="seriesTitle">시리즈</h1>
+  <div id="list"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+  authDomain: "novel-app-33aa7.firebaseapp.com",
+  projectId: "novel-app-33aa7",
+  storageBucket: "novel-app-33aa7.firebasestorage.app",
+  messagingSenderId: "791233454587",
+  appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+  measurementId: "G-BXT8Y97XW2"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const id = new URLSearchParams(location.search).get('id'); // bundles/{id}
+const titleEl = document.getElementById('seriesTitle');
+const listEl  = document.getElementById('list');
+
+async function load(){
+  if (!id){ alert('잘못된 접근입니다.'); return; }
+  const b = await getDoc(doc(db,'bundles', id));
+  if (!b.exists()){ alert('시리즈를 찾을 수 없습니다.'); return; }
+  const name = b.data().name || '시리즈';
+  titleEl.textContent = `시리즈: ${name}`;
+
+  const q = query(collection(db, `bundles/${id}/items`), orderBy('createdAt','desc'));
+  const s = await getDocs(q);
+  if (s.empty){ listEl.textContent = '아직 포함된 소설이 없습니다.'; return; }
+  s.forEach(d=>{
+    const v = d.data();
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = v.title || '(제목 없음)';
+    btn.onclick = ()=> location.href = `detail.html?id=${v.publicId}`;
+    const wrap = document.createElement('div'); wrap.className='item'; wrap.appendChild(btn);
+    listEl.appendChild(wrap);
+  });
+}
+load();
+</script>
+</body>
+</html>
