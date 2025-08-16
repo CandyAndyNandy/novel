@@ -2,54 +2,107 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOVEL - 성공</title>
+  <title>Success - NOVEL</title>
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-    header {
-      background: #ff4d4d; color: white; height: 20vh;
-      display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 20px;
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
     }
-    header h1 { margin: 0 0 20px 0; font-size: 36px; font-weight: bold; }
-    .buttons { display: flex; flex-direction: row; gap: 10px; }
-    .buttons button {
-      padding: 10px 20px; font-size: 16px; background: white; color: black;
-      border: 1px solid black; border-radius: 6px; cursor: pointer; font-weight: bold;
+    /* 상단 영역: 빨강+노랑 */
+    .top-bar {
+      display: flex;
+      height: 20vh; /* 20% 빨강 */
     }
-    .content { background: #fff176; min-height: 80vh; padding: 20px; }
-
-    /* 공개 피드 */
-    .feed-container { margin-top: 20px; max-width: 900px; }
+    .red-section {
+      flex: 2; /* 20% */
+      background-color: red;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      padding: 10px;
+      color: white;
+    }
+    .yellow-section {
+      flex: 8; /* 80% */
+      background-color: yellow;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    /* 버튼 스타일 */
+    .button-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .button-bar button {
+      background: white;
+      color: black;
+      border: 1px solid black;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .button-bar button:hover {
+      background: #f2f2f2;
+    }
+    /* 콘텐츠 영역 */
+    .content {
+      padding: 20px;
+    }
     .feed-button {
-      display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 10px;
-      background: white; color: black; border: 1px solid black; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #333;
+      background: white;
+      cursor: pointer;
+      text-align: left;
     }
-    .status { font-size: 14px; color:#333; margin-top: 8px; }
+    .feed-button:hover {
+      background: #eee;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>NOVEL</h1>
-    <div class="buttons">
-      <button onclick="location.href='write.html'">소설 쓰기</button>
-      <button onclick="location.href='view.html'">내 소설 보기</button>
-      <button onclick="logout()">로그아웃</button>
-      <button onclick="deleteAccount()">회원 탈퇴하기</button>
+  <!-- 상단 영역 -->
+  <div class="top-bar">
+    <div class="red-section">
+      <div class="button-bar">
+        <button onclick="location.href='write.html'">소설쓰기</button>
+        <button onclick="location.href='view.html'">내 소설 보기</button>
+        <button onclick="logout()">로그아웃</button>
+        <button onclick="deleteAccount()">회원탈퇴</button>
+      </div>
     </div>
-  </header>
-
-  <div class="content">
-    <h2 style="margin:0;">공개 피드</h2>
-    <div class="feed-container" id="feedContainer"></div>
-    <div class="status" id="feedStatus"></div>
+    <div class="yellow-section">
+      NOVEL
+    </div>
   </div>
 
+  <!-- 공개 피드 + 시리즈 -->
+  <div class="content">
+    <h2>공개 피드</h2>
+    <div id="feedStatus"></div>
+    <div id="feedContainer"></div>
+
+    <h2 style="margin-top:30px;">시리즈(묶음)</h2>
+    <div id="bundleBox">불러오는 중…</div>
+  </div>
+
+  <!-- Firebase SDK -->
   <script type="module">
-    // ✅ 페이지 안에서 직접 Firebase 초기화 (외부 파일 import 삭제)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
+    // ✅ Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
       authDomain: "novel-app-33aa7.firebaseapp.com",
@@ -62,86 +115,76 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db   = getFirestore(app);
+    const db = getFirestore(app);
 
     // 로그아웃
-    function logout() {
-      signOut(auth).then(() => {
-        alert("로그아웃 되었습니다.");
-        location.href = "index.html";
-      }).catch((error) => {
-        alert("로그아웃 오류: " + error.message);
-      });
+    window.logout = async function() {
+      await signOut(auth);
+      alert("로그아웃 되었습니다.");
+      location.href = "index.html";
     }
 
     // 회원탈퇴
-    function deleteAccount() {
-      const user = auth.currentUser;
-      if (user) {
-        if (confirm("정말 회원탈퇴 하시겠습니까?")) {
-          deleteUser(user).then(() => {
-            alert("회원탈퇴가 완료되었습니다.");
+    window.deleteAccount = async function() {
+      if(confirm("정말로 회원 탈퇴하시겠습니까?")){
+        const user = auth.currentUser;
+        if(user){
+          try {
+            await deleteUser(user);
+            alert("회원 탈퇴가 완료되었습니다.");
             location.href = "index.html";
-          }).catch((error) => {
-            alert("회원탈퇴 오류: " + error.message);
-          });
+          } catch(e){
+            alert("회원 탈퇴 실패: " + e.message);
+          }
         }
-      } else {
-        alert("로그인 상태가 아닙니다.");
       }
     }
-    window.logout = logout;
-    window.deleteAccount = deleteAccount;
 
-    // ✅ 공개 피드 로드 (컬렉션 이름: public_novels로 통일)
-    async function loadFeed() {
-      const feed = document.getElementById("feedContainer");
-      const status = document.getElementById("feedStatus");
+    // 공개 피드 불러오기
+    const feed = document.getElementById("feedContainer");
+    const status = document.getElementById("feedStatus");
+
+    async function loadFeed(){
       feed.innerHTML = ""; status.textContent = "불러오는 중…";
-
-      try {
-        // createdAt 기준 최신순 (인덱스 필요할 수 있음). 인덱스 없으면 아래 주석의 '단순 조회'로 바꾸세요.
-        const q = query(collection(db, "public_novels"), orderBy("createdAt", "desc"));
+      try{
+        const q = query(collection(db, "public_novels"), orderBy("createdAt","desc"));
         const snap = await getDocs(q);
-
-        if (snap.empty) {
-          status.textContent = "아직 공개된 소설이 없습니다.";
-          return;
-        }
-        status.textContent = "";
-
-        snap.forEach(docSnap => {
-          const v = docSnap.data();
+        status.textContent = snap.empty ? "아직 공개된 소설이 없습니다." : "";
+        snap.forEach(d=>{
+          const v = d.data();
           const btn = document.createElement("button");
           btn.className = "feed-button";
-          btn.textContent = (v.title || "(제목 없음)") + " - " + (v.author || "익명");
-          btn.onclick = () => location.href = `detail.html?id=${docSnap.id}`;
+          const series = v.seriesName ? ` (시리즈: ${v.seriesName})` : "";
+          btn.textContent = `${v.title || "(제목 없음)"} - ${v.author || "익명"}${series}`;
+          btn.onclick = ()=> location.href = `detail.html?id=${d.id}`;
           feed.appendChild(btn);
         });
-      } catch (e) {
-        // 인덱스 오류 등으로 실패할 경우 '단순 조회'로 한 번 더 시도
-        try {
-          const snap2 = await getDocs(collection(db, "public_novels"));
-          if (snap2.empty) {
-            status.textContent = "아직 공개된 소설이 없습니다.";
-            return;
-          }
-          status.textContent = "";
-          snap2.forEach(docSnap => {
-            const v = docSnap.data();
-            const btn = document.createElement("button");
-            btn.className = "feed-button";
-            btn.textContent = (v.title || "(제목 없음)") + " - " + (v.author || "익명");
-            btn.onclick = () => location.href = `detail.html?id=${docSnap.id}`;
-            feed.appendChild(btn);
-          });
-        } catch (e2) {
-          status.textContent = "불러오기 실패: " + e2.message;
-        }
+      }catch(e){ status.textContent = "불러오기 실패: " + e.message; }
+    }
+    loadFeed();
+
+    // ✅ 시리즈(묶음) 불러오기
+    const bundleBox = document.getElementById("bundleBox");
+    async function loadBundles(){
+      bundleBox.innerHTML = "불러오는 중…";
+      try{
+        const q = query(collection(db,'bundles'), orderBy('createdAt','desc'));
+        const s = await getDocs(q);
+        if (s.empty){ bundleBox.textContent = '등록된 시리즈가 없습니다.'; return; }
+        bundleBox.innerHTML = "";
+        s.forEach(d=>{
+          const v = d.data();
+          const b = document.createElement('button');
+          b.className = 'feed-button';
+          b.textContent = v.name || '시리즈';
+          b.onclick = ()=> location.href = `bundle_detail.html?id=${d.id}`;
+          bundleBox.appendChild(b);
+        });
+      }catch(e){
+        bundleBox.textContent = "시리즈 불러오기 실패: " + e.message;
       }
     }
-
-    loadFeed();
+    loadBundles();
   </script>
 </body>
 </html>
