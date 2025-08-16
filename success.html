@@ -8,57 +8,45 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #fff176; /* 노란색 영역 */
     }
 
     header {
-      position: relative;
       background: #ff4d4d; /* 빨간색 영역 */
       color: white;
-      text-align: left;
-      padding: 20px 20px 80px 20px; /* 위쪽 공간 줄임, 전체 비율 3:7 */
+      height: 30vh; /* 전체 높이의 3/10 */
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      padding: 20px;
     }
 
     header h1 {
-      margin: 0;
+      margin: 0 0 15px 0;
       font-size: 32px;
       font-weight: bold;
     }
 
     .buttons {
-      margin-top: 15px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
     }
 
     .buttons button {
-      margin-right: 10px;
       padding: 10px 20px;
       font-size: 16px;
       background: white;   /* 항상 흰색 배경 */
       color: black;        /* 항상 검정 글씨 */
-      border: 1px solid black; /* index.html 라인 느낌 */
+      border: 1px solid black; 
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
     }
 
-    .wave {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      overflow: hidden;
-      line-height: 0;
-    }
-
-    .wave svg {
-      position: relative;
-      display: block;
-      width: calc(100% + 1.3px);
-      height: 80px;
-    }
-
     .content {
-      min-height: 70vh; /* 전체 화면에서 7:3 비율 반영 */
+      background: #fff176; /* 노란색 영역 */
+      min-height: 70vh;    /* 전체 높이의 7/10 */
       padding: 20px;
     }
   </style>
@@ -71,15 +59,6 @@
       <button onclick="location.href='view.html'">내 소설 보기</button>
       <button onclick="logout()">로그아웃</button>
       <button onclick="deleteAccount()">회원 탈퇴하기</button>
-    </div>
-
-    <!-- 물결 모양 (index.html과 동일 스타일) -->
-    <div class="wave">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-        <path fill="#fff176" fill-opacity="1"
-          d="M0,224L48,213.3C96,203,192,181,288,165.3C384,149,480,139,576,138.7C672,139,768,149,864,154.7C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-        </path>
-      </svg>
     </div>
   </header>
 
@@ -108,18 +87,3 @@
         if (confirm("정말 회원탈퇴 하시겠습니까?")) {
           deleteUser(user).then(() => {
             alert("회원탈퇴가 완료되었습니다.");
-            location.href = "index.html";
-          }).catch((error) => {
-            alert("회원탈퇴 오류: " + error.message);
-          });
-        }
-      } else {
-        alert("로그인 상태가 아닙니다.");
-      }
-    }
-
-    window.logout = logout;
-    window.deleteAccount = deleteAccount;
-  </script>
-</body>
-</html>
