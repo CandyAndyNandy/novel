@@ -1,0 +1,176 @@
+<!-- /novel/bundle.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>묶음으로 송출</title>
+<style>
+  html,body{margin:0;height:100%;font-family:sans-serif;background:#fff176;}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+  .panel{width:90%;max-width:420px;background:#fff;border:1px solid #000;border-radius:10px;padding:18px}
+  h1{margin:0 0 12px 0;font-size:18px;text-align:center}
+  .row{display:flex;gap:10px;justify-content:center;margin:10px 0}
+  button{background:#fff;color:#000;border:1px solid #000;border-radius:6px;padding:10px 14px;cursor:pointer;font-weight:700}
+  .center{display:flex;justify-content:center;margin-top:10px}
+  #newBox{display:none;margin-top:10px}
+  input[type=text]{width:100%;padding:8px;border:1px solid #000;border-radius:6px}
+  .list{display:none;margin-top:10px;border:1px solid #000;border-radius:8px;max-height:300px;overflow:auto;background:#fff;padding:8px}
+  .bundle-btn{display:block;width:100%;text-align:left;margin-bottom:8px;padding:8px;border:1px solid #000;border-radius:6px;background:#fff;color:#000;cursor:pointer}
+  .hint{font-size:12px;color:#333;margin-top:6px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>묶음으로 송출</h1>
+    <div class="row">
+      <button id="newSeriesBtn">새 묶음 만들기</button>
+      <button id="pickSeriesBtn">묶음에 포함하기</button>
+    </div>
+
+    <!-- 새 묶음 만들기 박스 -->
+    <div id="newBox">
+      <input type="text" id="seriesName" placeholder="묶음 이름을 입력하세요">
+      <div class="center"><button id="createBtn">만들고 이 글 포함</button></div>
+    </div>
+
+    <!-- 내 묶음 목록 -->
+    <div id="listBox" class="list"></div>
+
+    <div class="hint">버튼은 모두 흰색 배경/검정 글씨로만 표시됩니다.</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { 
+  getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp,
+  query, where, getDocs, updateDoc 
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+  authDomain: "novel-app-33aa7.firebaseapp.com",
+  projectId: "novel-app-33aa7",
+  storageBucket: "novel-app-33aa7.firebasestorage.app",
+  messagingSenderId: "791233454587",
+  appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+  measurementId: "G-BXT8Y97XW2"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// URL 파라미터: 현재 글 id(개인 저장)와 내 uid
+const params   = new URLSearchParams(location.search);
+const sourceId = params.get('sourceId');  // 내 개인 novels/{id}
+const ownerUid = params.get('uid');
+
+// 내 개인 글을 읽어서 제목/작성자/내용 가져오기
+async function getMyNovel(){
+  // 개인 글은 users/{uid}/novels/{sourceId}
+  const ref = doc(db, `users/${ownerUid}/novels/${sourceId}`);
+  const snap= await getDoc(ref);
+  if (!snap.exists()) throw new Error('글을 찾을 수 없어요.');
+  return { id: snap.id, ...snap.data() };
+}
+
+// public_novels에 이미 송출됐는지 확인하고 없으면 송출
+async function ensurePublic(novel){
+  // 중복 체크: ownerUid + sourceId
+  const q = query(collection(db,'public_novels'),
+                  where('ownerUid','==',ownerUid),
+                  where('sourceId','==',sourceId));
+  const s = await getDocs(q);
+  if (!s.empty) return { id: s.docs[0].id, ...s.docs[0].data() };
+
+  const docRef = await addDoc(collection(db,'public_novels'), {
+    title: novel.title || '',
+    content: novel.content || '',
+    author: novel.author || '익명',
+    ownerUid,
+    sourceId,
+    createdAt: serverTimestamp()
+  });
+  return { id: docRef.id, title: novel.title, author: novel.author || '익명' };
+}
+
+// 새 묶음 만들고, 이 글 포함
+async function createSeriesAndAttach(name){
+  if (!name) { alert('묶음 이름을 입력하세요.'); return; }
+  const novel = await getMyNovel();
+  const pub   = await ensurePublic(novel);
+
+  // bundles에 생성 (내 소유)
+  const bRef = await addDoc(collection(db,'bundles'), {
+    name, ownerUid, createdAt: serverTimestamp()
+  });
+
+  // items에 public_novels 연결
+  await addDoc(collection(db, `bundles/${bRef.id}/items`), {
+    publicId: pub.id,
+    title: novel.title || '',
+    author: novel.author || '익명',
+    createdAt: serverTimestamp()
+  });
+
+  // 공개글에 seriesName 표시(성공 페이지에서 "시리즈: ..." 표기)
+  await updateDoc(doc(db, 'public_novels', pub.id), { seriesName: name });
+
+  alert('새 묶음을 만들고 이 글을 포함했습니다.');
+  window.close();
+}
+
+// 내 묶음 목록 불러오기
+async function loadMySeries(){
+  const box = document.getElementById('listBox');
+  box.innerHTML = '';
+  const q = query(collection(db,'bundles'), where('ownerUid','==',ownerUid));
+  const s = await getDocs(q);
+  if (s.empty){ box.textContent = '아직 만든 묶음이 없습니다.'; }
+  s.forEach(d=>{
+    const v = d.data();
+    const btn = document.createElement('button');
+    btn.className = 'bundle-btn';
+    btn.textContent = v.name;
+    btn.onclick = async ()=>{
+      const novel = await getMyNovel();
+      const pub   = await ensurePublic(novel);
+      // items에 추가
+      await addDoc(collection(db, `bundles/${d.id}/items`), {
+        publicId: pub.id,
+        title: novel.title || '',
+        author: novel.author || '익명',
+        createdAt: serverTimestamp()
+      });
+      // 공개글에 seriesName 태그(보이는 표시)
+      await updateDoc(doc(db, 'public_novels', pub.id), { seriesName: v.name });
+      alert(`"${v.name}" 묶음에 포함했습니다.`);
+      window.close();
+    };
+    box.appendChild(btn);
+  });
+}
+
+// UI 연결
+const newSeriesBtn = document.getElementById('newSeriesBtn');
+const pickSeriesBtn= document.getElementById('pickSeriesBtn');
+const newBox       = document.getElementById('newBox');
+const listBox      = document.getElementById('listBox');
+const createBtn    = document.getElementById('createBtn');
+const seriesNameIn = document.getElementById('seriesName');
+
+newSeriesBtn.onclick = ()=>{
+  newBox.style.display = 'block';
+  listBox.style.display= 'none';
+  seriesNameIn.focus();
+};
+pickSeriesBtn.onclick = async ()=>{
+  newBox.style.display = 'none';
+  listBox.style.display= 'block';
+  await loadMySeries();
+};
+createBtn.onclick = async ()=>{ await createSeriesAndAttach(seriesNameIn.value.trim()); };
+
+</script>
+</body>
+</html>
