@@ -3,68 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>성공 페이지</title>
+  <title>NOVEL - 성공</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f4;
+      background: #fff176; /* 노란색 배경 */
     }
 
     header {
+      position: relative;
       background: #ff4d4d; /* 빨간색 영역 */
       color: white;
-      padding: 40px 20px;
-      font-size: 24px;
-      font-weight: bold;
-      border-bottom-left-radius: 50% 20px; /* 물결 느낌 */
-      border-bottom-right-radius: 50% 20px;
+      text-align: center;
+      padding: 60px 20px 150px 20px; /* 빨간 영역 크게 */
     }
 
-    main {
-      background: #fff176; /* 노란색 영역 */
-      min-height: calc(100vh - 140px);
-      padding: 40px 20px;
+    header h1 {
+      margin: 0;
+      font-size: 40px;
+      font-weight: bold;
+    }
+
+    .wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+
+    .wave svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 120px;
+    }
+
+    .buttons {
+      margin-top: 40px;
     }
 
     button {
       display: block;
-      margin: 20px auto;
-      padding: 12px 25px;
+      margin: 15px auto;
+      padding: 14px 30px;
       font-size: 18px;
-      background: #4CAF50;
-      color: white;
+      background: white;   /* 항상 흰색 배경 */
+      color: black;        /* 항상 검정 글씨 */
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #45a049;
-    }
-
-    .danger {
-      background: #d9534f;
-    }
-
-    .danger:hover {
-      background: #c9302c;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <header>
-    🎉 로그인 성공 🎉
-  </header>
+    <h1>NOVEL</h1>
 
-  <main>
-    <button onclick="location.href='write.html'">소설 쓰기</button>
-    <button onclick="location.href='view.html'">내 소설 보기</button>
-    <button onclick="logout()">로그아웃</button>
-    <button class="danger" onclick="deleteAccount()">회원 탈퇴하기</button>
-  </main>
+    <div class="buttons">
+      <button onclick="location.href='write.html'">소설 쓰기</button>
+      <button onclick="location.href='view.html'">내 소설 보기</button>
+      <button onclick="logout()">로그아웃</button>
+      <button onclick="deleteAccount()">회원 탈퇴하기</button>
+    </div>
+
+    <!-- 물결 모양 -->
+    <div class="wave">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+        <path fill="#fff176" fill-opacity="1"
+          d="M0,192L60,181.3C120,171,240,149,360,144C480,139,600,149,720,154.7C840,160,960,160,1080,149.3C1200,139,1320,117,1380,106.7L1440,96L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
+        </path>
+      </svg>
+    </div>
+  </header>
 
   <script type="module">
     import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -98,7 +112,6 @@
       }
     }
 
-    // 전역 함수로 노출
     window.logout = logout;
     window.deleteAccount = deleteAccount;
   </script>
