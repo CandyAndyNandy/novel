@@ -11,9 +11,9 @@
     }
 
     header {
-      background: #ff4d4d; /* 빨간색 영역 */
+      background: #ff4d4d; /* 빨간색 */
       color: white;
-      height: 20vh; /* 전체 높이의 2/10 */
+      height: 20vh; /* 빨간색 20% */
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -36,18 +36,41 @@
     .buttons button {
       padding: 10px 20px;
       font-size: 16px;
-      background: white;   /* 흰색 배경 */
+      background: white;   /* 흰색 */
       color: black;        /* 검정 글씨 */
-      border: 1px solid black; 
+      border: 1px solid black;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
     }
 
     .content {
-      background: #fff176; /* 노란색 영역 */
-      min-height: 80vh;    /* 전체 높이의 8/10 */
+      background: #fff176; /* 노란색 */
+      min-height: 80vh;    /* 노란색 80% */
       padding: 20px;
+    }
+
+    /* 공개 피드 영역 */
+    .feed-container {
+      margin-top: 20px;
+    }
+
+    .feed-item {
+      margin-bottom: 10px;
+    }
+
+    .feed-button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      background: white;
+      color: black;
+      border: 1px solid black;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -63,12 +86,19 @@
   </header>
 
   <div class="content">
-    <!-- 여기에 추후 공개피드나 본문 내용이 들어감 -->
+    <h2>📢 공개 피드</h2>
+    <div class="feed-container" id="feedContainer">
+      <!-- 공개된 소설들이 버튼 형태로 여기에 추가됨 -->
+    </div>
   </div>
 
   <script type="module">
     import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    const auth = getAuth();
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { app } from "./firebaseConfig.js";
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
     // 로그아웃
     function logout() {
@@ -97,8 +127,26 @@
       }
     }
 
+    // 공개 피드 불러오기
+    async function loadFeed() {
+      const feedContainer = document.getElementById("feedContainer");
+      feedContainer.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "publicNovels"));
+      querySnapshot.forEach((doc) => {
+        const novel = doc.data();
+        const button = document.createElement("button");
+        button.className = "feed-button";
+        button.textContent = novel.title;
+        button.onclick = () => {
+          location.href = `novelDetail.html?id=${doc.id}`;
+        };
+        feedContainer.appendChild(button);
+      });
+    }
+
     window.logout = logout;
     window.deleteAccount = deleteAccount;
+    loadFeed();
   </script>
 </body>
 </html>
