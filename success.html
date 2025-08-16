@@ -5,73 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NOVEL - 성공</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
+    body { margin: 0; font-family: Arial, sans-serif; }
     header {
-      background: #ff4d4d; /* 빨간색 */
-      color: white;
-      height: 20vh; /* 빨간색 20% */
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
-      padding: 20px;
+      background: #ff4d4d; color: white; height: 20vh;
+      display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 20px;
     }
-
-    header h1 {
-      margin: 0 0 20px 0;
-      font-size: 36px;
-      font-weight: bold;
-    }
-
-    .buttons {
-      display: flex;
-      flex-direction: row;
-      gap: 10px;
-    }
-
+    header h1 { margin: 0 0 20px 0; font-size: 36px; font-weight: bold; }
+    .buttons { display: flex; flex-direction: row; gap: 10px; }
     .buttons button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background: white;   /* 흰색 */
-      color: black;        /* 검정 글씨 */
-      border: 1px solid black;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
+      padding: 10px 20px; font-size: 16px; background: white; color: black;
+      border: 1px solid black; border-radius: 6px; cursor: pointer; font-weight: bold;
     }
+    .content { background: #fff176; min-height: 80vh; padding: 20px; }
 
-    .content {
-      background: #fff176; /* 노란색 */
-      min-height: 80vh;    /* 노란색 80% */
-      padding: 20px;
-    }
-
-    /* 공개 피드 영역 */
-    .feed-container {
-      margin-top: 20px;
-    }
-
-    .feed-item {
-      margin-bottom: 10px;
-    }
-
+    /* 공개 피드 */
+    .feed-container { margin-top: 20px; max-width: 900px; }
     .feed-button {
-      display: block;
-      width: 100%;
-      text-align: left;
-      padding: 10px;
-      background: white;
-      color: black;
-      border: 1px solid black;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
+      display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 10px;
+      background: white; color: black; border: 1px solid black; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;
     }
+    .status { font-size: 14px; color:#333; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -86,19 +39,30 @@
   </header>
 
   <div class="content">
-    <h2>📢 공개 피드</h2>
-    <div class="feed-container" id="feedContainer">
-      <!-- 공개된 소설들이 버튼 형태로 여기에 추가됨 -->
-    </div>
+    <h2 style="margin:0;">공개 피드</h2>
+    <div class="feed-container" id="feedContainer"></div>
+    <div class="status" id="feedStatus"></div>
   </div>
 
   <script type="module">
-    import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-    import { app } from "./firebaseConfig.js";
+    // ✅ 페이지 안에서 직접 Firebase 초기화 (외부 파일 import 삭제)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
+      authDomain: "novel-app-33aa7.firebaseapp.com",
+      projectId: "novel-app-33aa7",
+      storageBucket: "novel-app-33aa7.firebasestorage.app",
+      messagingSenderId: "791233454587",
+      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
+      measurementId: "G-BXT8Y97XW2"
+    };
+
+    const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db   = getFirestore(app);
 
     // 로그아웃
     function logout() {
@@ -126,26 +90,57 @@
         alert("로그인 상태가 아닙니다.");
       }
     }
-
-    // 공개 피드 불러오기
-    async function loadFeed() {
-      const feedContainer = document.getElementById("feedContainer");
-      feedContainer.innerHTML = "";
-      const querySnapshot = await getDocs(collection(db, "publicNovels"));
-      querySnapshot.forEach((doc) => {
-        const novel = doc.data();
-        const button = document.createElement("button");
-        button.className = "feed-button";
-        button.textContent = novel.title;
-        button.onclick = () => {
-          location.href = `novelDetail.html?id=${doc.id}`;
-        };
-        feedContainer.appendChild(button);
-      });
-    }
-
     window.logout = logout;
     window.deleteAccount = deleteAccount;
+
+    // ✅ 공개 피드 로드 (컬렉션 이름: public_novels로 통일)
+    async function loadFeed() {
+      const feed = document.getElementById("feedContainer");
+      const status = document.getElementById("feedStatus");
+      feed.innerHTML = ""; status.textContent = "불러오는 중…";
+
+      try {
+        // createdAt 기준 최신순 (인덱스 필요할 수 있음). 인덱스 없으면 아래 주석의 '단순 조회'로 바꾸세요.
+        const q = query(collection(db, "public_novels"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          status.textContent = "아직 공개된 소설이 없습니다.";
+          return;
+        }
+        status.textContent = "";
+
+        snap.forEach(docSnap => {
+          const v = docSnap.data();
+          const btn = document.createElement("button");
+          btn.className = "feed-button";
+          btn.textContent = (v.title || "(제목 없음)") + " - " + (v.author || "익명");
+          btn.onclick = () => location.href = `detail.html?id=${docSnap.id}`;
+          feed.appendChild(btn);
+        });
+      } catch (e) {
+        // 인덱스 오류 등으로 실패할 경우 '단순 조회'로 한 번 더 시도
+        try {
+          const snap2 = await getDocs(collection(db, "public_novels"));
+          if (snap2.empty) {
+            status.textContent = "아직 공개된 소설이 없습니다.";
+            return;
+          }
+          status.textContent = "";
+          snap2.forEach(docSnap => {
+            const v = docSnap.data();
+            const btn = document.createElement("button");
+            btn.className = "feed-button";
+            btn.textContent = (v.title || "(제목 없음)") + " - " + (v.author || "익명");
+            btn.onclick = () => location.href = `detail.html?id=${docSnap.id}`;
+            feed.appendChild(btn);
+          });
+        } catch (e2) {
+          status.textContent = "불러오기 실패: " + e2.message;
+        }
+      }
+    }
+
     loadFeed();
   </script>
 </body>
