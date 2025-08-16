@@ -5,59 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>성공 페이지</title>
   <style>
-    body{font-family:sans-serif;margin:0;padding:0;text-align:center;background:#f9f9f9;}
-    h2{padding:20px 0;}
-    .btn{display:block;margin:10px auto;padding:12px 20px;font-size:16px;
-         border:none;border-radius:6px;cursor:pointer;}
-    .write{background:#00bfff;color:#fff;}
-    .view{background:#ffcc00;}
-    .logout{background:#ccc;}
-    #feed{background:#ffdddd;padding:30px;margin-top:20px;min-height:300px;}
-    .item-btn{display:block;margin:8px auto;padding:8px 14px;border:1px solid #aaa;
-              border-radius:6px;background:#fff;cursor:pointer;}
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+    }
+
+    header {
+      background: #ff4d4d; /* 빨간색 영역 */
+      color: white;
+      padding: 40px 20px;
+      font-size: 24px;
+      font-weight: bold;
+      border-bottom-left-radius: 50% 20px; /* 물결 느낌 */
+      border-bottom-right-radius: 50% 20px;
+    }
+
+    main {
+      background: #fff176; /* 노란색 영역 */
+      min-height: calc(100vh - 140px);
+      padding: 40px 20px;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 25px;
+      font-size: 18px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .danger {
+      background: #d9534f;
+    }
+
+    .danger:hover {
+      background: #c9302c;
+    }
   </style>
 </head>
 <body>
-  <h2>성공! 환영합니다.</h2>
-  <button class="btn write" onclick="location.href='write.html?user='+user">소설 쓰기</button>
-  <button class="btn view" onclick="location.href='view.html?user='+user">내 소설 보기</button>
-  <button class="btn logout" onclick="location.href='index.html'">로그아웃</button>
+  <header>
+    🎉 로그인 성공 🎉
+  </header>
 
-  <h3>공개 피드</h3>
-  <div id="feed"></div>
+  <main>
+    <button onclick="location.href='write.html'">소설 쓰기</button>
+    <button onclick="location.href='view.html'">내 소설 보기</button>
+    <button onclick="logout()">로그아웃</button>
+    <button class="danger" onclick="deleteAccount()">회원 탈퇴하기</button>
+  </main>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import { getAuth, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    const params = new URLSearchParams(location.search);
-    const user = params.get("user") || "익명";
+    const auth = getAuth();
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCr516GzQlQu6ev5K9GKwlE--6GWjPSjKw",
-      authDomain: "novel-app-33aa7.firebaseapp.com",
-      projectId: "novel-app-33aa7",
-      storageBucket: "novel-app-33aa7.firebasestorage.app",
-      messagingSenderId: "791233454587",
-      appId: "1:791233454587:web:20319c91ca14d34bdc6b5e",
-      measurementId: "G-BXT8Y97XW2"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const feedEl=document.getElementById("feed");
-    const q=query(collection(db,"public_novels"),orderBy("createdAt","desc"));
-    onSnapshot(q,snap=>{
-      feedEl.innerHTML="";
-      snap.forEach(doc=>{
-        const v=doc.data();
-        const btn=document.createElement("button");
-        btn.className="item-btn";
-        btn.textContent=(v.title||"(제목없음)")+" - "+(v.author||"익명");
-        btn.onclick=()=>{location.href="detail.html?id="+doc.id;};
-        feedEl.appendChild(btn);
+    // 로그아웃
+    function logout() {
+      signOut(auth).then(() => {
+        alert("로그아웃 되었습니다.");
+        location.href = "index.html";
+      }).catch((error) => {
+        alert("로그아웃 오류: " + error.message);
       });
-    });
+    }
+
+    // 회원탈퇴
+    function deleteAccount() {
+      const user = auth.currentUser;
+      if (user) {
+        if (confirm("정말 회원탈퇴 하시겠습니까?")) {
+          deleteUser(user).then(() => {
+            alert("회원탈퇴가 완료되었습니다.");
+            location.href = "index.html";
+          }).catch((error) => {
+            alert("회원탈퇴 오류: " + error.message);
+          });
+        }
+      } else {
+        alert("로그인 상태가 아닙니다.");
+      }
+    }
+
+    // 전역 함수로 노출
+    window.logout = logout;
+    window.deleteAccount = deleteAccount;
   </script>
 </body>
 </html>
