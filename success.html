@@ -1,26 +1,44 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>novel</title>
   <style>
-    html,body{margin:0;padding:0;height:100%;font-family:sans-serif}
-    .top{background:#f00;position:relative;color:#fff;font-weight:700;font-size:32px}
-    .top .inner{min-height:28vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:2;padding:20px 16px}
-    .btns{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
-    .btn{background:#fff;color:#000;padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700}
-    .account{position:absolute;right:16px;top:10px;display:flex;gap:8px}
-    .wave{position:absolute;bottom:-1px;left:0;width:100%;height:90px;z-index:1;pointer-events:none}
-    .bottom{background:#ffcc00;min-height:72vh;padding:16px}
-    .feed{max-width:900px;margin:0 auto;display:grid;gap:10px}
-    .card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px}
-    .title{font-weight:800;margin-bottom:6px}
-    .meta{font-size:12px;color:#666;margin-bottom:8px}
-    .snippet{white-space:pre-wrap}
-    svg{display:block;width:100%;height:100%}
+    /* 페이지 전체 스크롤 가능 (노란 영역은 내용에 따라 무한 확장) */
+    html, body { margin:0; padding:0; font-family:sans-serif; background:#ffcc00; }
+
+    /* 빨간 헤더: 물결 + 더 넓게 */
+    .top{background:#f00; position:relative; color:#fff; font-weight:700; font-size:32px}
+    .top .inner{min-height:32vh; display:flex; align-items:center; justify-content:center; position:relative; z-index:2; padding:24px 16px}
+    .btns{position:absolute; left:16px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px}
+    .btn{background:#fff; color:#000; padding:8px 14px; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:700}
+    .account{position:absolute; right:16px; top:12px; display:flex; gap:8px}
+    .wave{position:absolute; bottom:-1px; left:0; width:100%; height:95px; z-index:1; pointer-events:none}
+    svg{display:block; width:100%; height:100%}
+
+    /* 노란 영역(콘텐츠) — 높이 제한 없음 */
+    .bottom{padding:18px 16px 40px; max-width:900px; margin:0 auto}
+
+    /* 공개 피드(버튼 스타일 카드) */
+    .feed-title{font-size:22px; font-weight:800; text-align:center; margin:8px 0 16px}
+    .feed{display:grid; gap:10px}
+    .item-btn{
+      display:block; width:100%; text-align:left;
+      background:#fff; border:1px solid #ddd; border-radius:12px;
+      padding:12px 14px; cursor:pointer; font-weight:700;
+    }
+    .item-btn:hover{ background:#f7f7f7 }
+    .item-title{font-size:16px; font-weight:800; margin-bottom:6px}
+    .item-meta{font-size:12px; color:#666; margin-bottom:8px; font-weight:600}
+    .item-snippet{white-space:pre-wrap; font-weight:500}
+
+    .status{ text-align:center; color:#333; font-size:13px; margin:14px 0 4px }
+    .hidden{ display:none }
   </style>
 </head>
 <body>
+  <!-- 상단 빨간 영역 -->
   <div class="top">
     <div class="inner">
       <div class="btns">
@@ -40,9 +58,12 @@
     </div>
   </div>
 
+  <!-- 하단 노란 영역: 무한 확장 -->
   <div class="bottom">
-    <h2 style="text-align:center;margin:10px 0 16px">공개 소설</h2>
-    <div id="feed" class="feed">불러오는 중…</div>
+    <h2 class="feed-title">공개 소설</h2>
+    <div id="feed" class="feed"></div>
+    <div id="loading" class="status hidden">불러오는 중…</div>
+    <div id="endmark" class="status hidden">더 이상 항목이 없습니다.</div>
   </div>
 
   <script type="module">
@@ -53,7 +74,7 @@
       reauthenticateWithCredential, EmailAuthProvider
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import {
-      getFirestore, collection, query, orderBy, limit, getDocs, doc, deleteDoc
+      getFirestore, collection, query, orderBy, limit, getDocs, startAfter
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -71,49 +92,97 @@
     const db   = getFirestore(app);
     await setPersistence(auth, browserLocalPersistence);
 
-    onAuthStateChanged(auth, (u)=>{
+    // UI 엘리먼트
+    const feedEl    = document.getElementById('feed');
+    const loadingEl = document.getElementById('loading');
+    const endEl     = document.getElementById('endmark');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // 무한 스크롤 상태
+    const PAGE = 20;
+    let lastDoc = null;
+    let loading = false;
+    let ended   = false;
+
+    onAuthStateChanged(auth, async (u)=>{
       if(!u){ alert('로그인이 필요합니다.'); location.href='login.html'; return; }
-      loadFeed();
+      // 첫 페이지 로드
+      await loadMore();
     });
 
-    async function loadFeed(){
-      const feed = document.getElementById('feed');
-      feed.textContent = '불러오는 중…';
+    // 공개 피드 아이템을 "버튼"으로 렌더
+    function renderItem(v){
+      const btn = document.createElement('button');
+      btn.className = 'item-btn';
+      const dt = v.createdAt?.toDate ? v.createdAt.toDate() : new Date();
+      btn.innerHTML = `
+        <div class="item-title">${escapeHtml(v.title || '(제목 없음)')}</div>
+        <div class="item-meta">${escapeHtml(v.author || '익명')} · ${dt.toLocaleString()}</div>
+        <div class="item-snippet">${escapeHtml((v.content||'').slice(0,200))}${(v.content||'').length>200?'…':''}</div>
+      `;
+      // 클릭 시 상세 페이지가 있다면 연결할 수도 있음. 여기서는 그냥 펼치기/복사 등 원하는 동작 추가 가능.
+      btn.onclick = ()=> {
+        alert('제목: ' + (v.title || '(제목 없음)'));
+      };
+      feedEl.appendChild(btn);
+    }
+
+    // HTML escape (간단 방어)
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[s]));
+    }
+
+    // 페이지 단위 로드
+    async function loadMore(){
+      if (loading || ended) return;
+      loading = true;
+      loadingEl.classList.remove('hidden');
+
       try{
-        const q = query(collection(db,'public_novels'), orderBy('createdAt','desc'), limit(20));
-        const qs = await getDocs(q);
-        feed.innerHTML = '';
-        qs.forEach(d=>{
-          const v = d.data();
-          const card = document.createElement('div'); card.className='card';
-          const title = document.createElement('div'); title.className='title'; title.textContent = v.title || '(제목 없음)';
-          const meta  = document.createElement('div'); meta.className='meta';
-          const dt = v.createdAt?.toDate ? v.createdAt.toDate() : new Date();
-          meta.textContent = `${v.author || '익명'} · ${dt.toLocaleString()}`;
-          const snippet = document.createElement('div'); snippet.className='snippet';
-          snippet.textContent = (v.content || '').slice(0,200) + ((v.content||'').length>200?'…':'');
-          card.appendChild(title); card.appendChild(meta); card.appendChild(snippet);
-          feed.appendChild(card);
-        });
-        if (qs.empty) feed.textContent = '아직 공개된 소설이 없습니다.';
+        let q = query(collection(db,'public_novels'), orderBy('createdAt','desc'), limit(PAGE));
+        if (lastDoc) q = query(collection(db,'public_novels'), orderBy('createdAt','desc'), startAfter(lastDoc), limit(PAGE));
+
+        const snap = await getDocs(q);
+
+        if (snap.empty){
+          ended = true;
+          endEl.classList.remove('hidden');
+        } else {
+          snap.forEach(d => renderItem(d.data()));
+          lastDoc = snap.docs[snap.docs.length - 1];
+          // 다음 데이터가 없을 수도 있으니, PAGE 미만이면 종료 표시
+          if (snap.docs.length < PAGE){
+            ended = true;
+            endEl.classList.remove('hidden');
+          }
+        }
       }catch(e){
-        feed.textContent = '불러오기 실패: ' + e.message;
+        console.error(e);
+        alert('불러오기 실패: ' + e.message);
+      }finally{
+        loading = false;
+        loadingEl.classList.add('hidden');
       }
     }
 
-    document.getElementById('logoutBtn').onclick = async ()=>{ await signOut(auth); location.href='index.html'; };
+    // 인피니트 스크롤: 바닥 근처에서 다음 페이지 로드
+    window.addEventListener('scroll', ()=>{
+      const nearBottom = window.innerHeight + window.scrollY >= (document.body.offsetHeight - 400);
+      if (nearBottom) loadMore();
+    });
 
-    document.getElementById('deleteBtn').onclick = async ()=> {
+    // 로그아웃
+    logoutBtn.onclick = async ()=>{ await signOut(auth); location.href='index.html'; };
+
+    // 회원탈퇴 (간단버전: 재인증 절차 없이 계정 삭제 시도 — 필요하면 success.html의 이전 상세 로직을 재사용)
+    deleteBtn.onclick = async ()=> {
       const u = auth.currentUser; if(!u) return;
-      const nickLower = (u.displayName || '').toLowerCase();
-      const pass = prompt('본인 확인을 위해 비밀번호를 다시 입력하세요.');
-      if(!pass) return;
+      const ok = confirm('정말 회원탈퇴 하시겠습니까? (작성한 공개 글은 남을 수 있습니다)');
+      if(!ok) return;
       try{
-        const cred = EmailAuthProvider.credential(`${nickLower}@novel.local`, pass);
-        await reauthenticateWithCredential(u, cred);
-
-        // 본인 공개글까지 지우고 싶다면 여기서 ownerUid == u.uid 문서 찾아 삭제하는 루틴 추가 가능
-
         await deleteUser(u);
         alert('회원탈퇴 완료'); location.href='index.html';
       }catch(e){
